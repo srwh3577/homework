@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>jQuery AJAX 教學</title>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --card: #ffffff;
+    --text: #1f2933;
+    --muted: #647280;
+    --accent: #0b6fc2;
+    --accent-dark: #095a9e;
+    --code-bg: #1e2530;
+    --code-text: #e6edf3;
+    --border: #e2e6eb;
+    --ok: #1f9d57;
+    --err: #d6453d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+  }
+  header {
+    background: linear-gradient(135deg, #0b6fc2, #073d6e);
+    color: #fff;
+    padding: 48px 24px;
+    text-align: center;
+  }
+  header h1 { margin: 0 0 8px; font-size: 2.2rem; }
+  header p { margin: 0; opacity: .9; }
+  main {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 24px 20px 80px;
+  }
+  section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 30px;
+    margin: 24px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  h2 {
+    margin-top: 0;
+    font-size: 1.5rem;
+    border-left: 4px solid var(--accent);
+    padding-left: 12px;
+  }
+  h3 { font-size: 1.15rem; color: var(--accent-dark); margin-top: 28px; }
+  p { color: var(--text); }
+  .muted { color: var(--muted); font-size: .92rem; }
+  code.inline {
+    background: #eef1f4;
+    color: #c0341d;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: .9em;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 18px 20px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: .9rem;
+    line-height: 1.6;
+    margin: 14px 0;
+  }
+  pre .cmt { color: #7d8a99; }
+  pre .key { color: #79c0ff; }
+  pre .str { color: #a5d6a3; }
+  pre .fn  { color: #ffd479; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: .94rem;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: #eef3f8; }
+  td code { color: #c0341d; font-family: "Consolas", monospace; }
+  .toc {
+    background: #eef3f8;
+    border: 1px solid #d4e2ef;
+  }
+  .toc ol { margin: 8px 0 0; padding-left: 22px; }
+  .toc a { color: var(--accent-dark); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .tip {
+    border-left: 4px solid var(--ok);
+    background: #effaf3;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .warn {
+    border-left: 4px solid #e0a800;
+    background: #fff8e6;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  /* 互動範例區 */
+  .demo {
+    border: 1px dashed var(--accent);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin: 18px 0;
+    background: #f5fafe;
+  }
+  .demo button {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: .95rem;
+    transition: background .15s;
+  }
+  .demo button:hover { background: var(--accent-dark); }
+  .demo input {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: .95rem;
+    margin-right: 6px;
+  }
+  .output {
+    margin-top: 14px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    min-height: 44px;
+    font-family: "Consolas", monospace;
+    font-size: .88rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .output .ok { color: var(--ok); }
+  .output .err { color: var(--err); }
+  .badge {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    font-size: .75rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 30px;
+    font-size: .88rem;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>jQuery AJAX 教學</h1>
+  <p>從基礎語法到實際應用，附可直接執行的互動範例</p>
+</header>
+
+<main>
+
+  <!-- 目錄 -->
+  <section class="toc">
+    <h2>目錄</h2>
+    <ol>
+      <li><a href="#what">什麼是 AJAX？</a></li>
+      <li><a href="#setup">前置作業：載入 jQuery</a></li>
+      <li><a href="#ajax">核心方法：<code class="inline">$.ajax()</code></a></li>
+      <li><a href="#options">常用設定參數</a></li>
+      <li><a href="#shorthand">簡寫方法：<code class="inline">$.get / $.post / $.getJSON</code></a></li>
+      <li><a href="#callbacks">處理回應：done / fail / always</a></li>
+      <li><a href="#demo">互動範例（可直接執行）</a></li>
+      <li><a href="#errors">錯誤處理與常見問題</a></li>
+    </ol>
+  </section>
+
+  <!-- 1. 什麼是 AJAX -->
+  <section id="what">
+    <h2>1. 什麼是 AJAX？</h2>
+    <p>
+      AJAX 是 <strong>Asynchronous JavaScript and XML</strong> 的縮寫，意思是
+      「非同步的 JavaScript 與資料交換」。它讓網頁可以在
+      <strong>不重新整理整個頁面</strong> 的情況下，與伺服器交換資料並更新部分內容。
+    </p>
+    <p>常見的應用場景：</p>
+    <ul>
+      <li>輸入帳號時即時檢查是否已被註冊</li>
+      <li>無限捲動載入更多文章</li>
+      <li>送出表單後不跳頁，直接顯示結果</li>
+      <li>下拉選單連動（選縣市後自動載入鄉鎮）</li>
+    </ul>
+    <div class="tip">
+      <strong>為什麼用 jQuery？</strong> 原生的 <code class="inline">XMLHttpRequest</code> 寫起來繁瑣，
+      jQuery 把它包裝成簡潔好用的 API。雖然現代瀏覽器已有 <code class="inline">fetch()</code>，
+      但許多既有專案仍大量使用 jQuery AJAX，理解它仍然很重要。
+    </div>
+  </section>
+
+  <!-- 2. 載入 jQuery -->
+  <section id="setup">
+    <h2>2. 前置作業：載入 jQuery</h2>
+    <p>使用 jQuery AJAX 前，必須先在 HTML 中載入 jQuery 函式庫。最簡單的方式是用 CDN：</p>
+<pre><span class="cmt">&lt;!-- 放在 &lt;head&gt; 或 &lt;/body&gt; 前 --&gt;</span>
+&lt;<span class="key">script</span> <span class="fn">src</span>=<span class="str">"https://code.jquery.com/jquery-3.7.1.min.js"</span>&gt;&lt;/<span class="key">script</span>&gt;</pre>
+    <p>接著，所有 AJAX 程式碼建議寫在 <code class="inline">$(document).ready()</code> 內，確保 DOM 已載入：</p>
+<pre>$(<span class="fn">document</span>).<span class="fn">ready</span>(<span class="key">function</span> () {
+  <span class="cmt">// 你的 AJAX 程式碼寫在這裡</span>
+});
+
+<span class="cmt">// 簡寫，效果完全相同：</span>
+$(<span class="key">function</span> () {
+  <span class="cmt">// ...</span>
+});</pre>
+  </section>
+
+  <!-- 3. $.ajax() -->
+  <section id="ajax">
+    <h2>3. 核心方法：<code class="inline">$.ajax()</code></h2>
+    <p>
+      <code class="inline">$.ajax()</code> 是所有 jQuery AJAX 方法的底層核心，
+      其它簡寫方法（<code class="inline">$.get</code>、<code class="inline">$.post</code>）都是它的包裝。
+      它接收一個「設定物件」作為參數：
+    </p>
+<pre>$.<span class="fn">ajax</span>({
+  <span class="fn">url</span>: <span class="str">"https://jsonplaceholder.typicode.com/posts/1"</span>,  <span class="cmt">// 請求網址</span>
+  <span class="fn">method</span>: <span class="str">"GET"</span>,        <span class="cmt">// 請求方法：GET / POST / PUT / DELETE</span>
+  <span class="fn">dataType</span>: <span class="str">"json"</span>,    <span class="cmt">// 預期伺服器回傳的資料型態</span>
+  <span class="fn">data</span>: { <span class="fn">id</span>: <span class="str">1</span> }     <span class="cmt">// 要送出的資料</span>
+})
+.<span class="fn">done</span>(<span class="key">function</span> (response) {
+  <span class="cmt">// 請求成功：response 就是伺服器回傳的資料</span>
+  console.<span class="fn">log</span>(response);
+})
+.<span class="fn">fail</span>(<span class="key">function</span> (xhr, status, error) {
+  <span class="cmt">// 請求失敗</span>
+  console.<span class="fn">error</span>(<span class="str">"發生錯誤："</span>, error);
+})
+.<span class="fn">always</span>(<span class="key">function</span> () {
+  <span class="cmt">// 不論成功失敗都會執行（例如關閉 loading 動畫）</span>
+});</pre>
+  </section>
+
+  <!-- 4. 常用參數 -->
+  <section id="options">
+    <h2>4. 常用設定參數</h2>
+    <table>
+      <thead>
+        <tr><th>參數</th><th>說明</th><th>範例值</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>url</code></td><td>請求的目標網址（必填）</td><td><code>"/api/users"</code></td></tr>
+        <tr><td><code>method</code></td><td>HTTP 方法（舊版用 <code>type</code>）</td><td><code>"GET"</code> / <code>"POST"</code></td></tr>
+        <tr><td><code>data</code></td><td>送往伺服器的資料</td><td><code>{ name: "王小明" }</code></td></tr>
+        <tr><td><code>dataType</code></td><td>預期回傳格式</td><td><code>"json"</code> / <code>"html"</code> / <code>"text"</code></td></tr>
+        <tr><td><code>contentType</code></td><td>送出資料的格式</td><td><code>"application/json"</code></td></tr>
+        <tr><td><code>timeout</code></td><td>逾時時間（毫秒）</td><td><code>5000</code></td></tr>
+        <tr><td><code>headers</code></td><td>自訂請求標頭</td><td><code>{ Authorization: "Bearer ..." }</code></td></tr>
+        <tr><td><code>success</code></td><td>成功的回呼（舊式寫法）</td><td><code>function(data){...}</code></td></tr>
+        <tr><td><code>error</code></td><td>失敗的回呼（舊式寫法）</td><td><code>function(xhr){...}</code></td></tr>
+      </tbody>
+    </table>
+    <div class="warn">
+      <strong>送 JSON 給後端時要注意：</strong> 預設 <code class="inline">data</code> 會被轉成
+      <code class="inline">name=王小明&amp;age=20</code> 這種表單格式。若後端要收 JSON，需設定
+      <code class="inline">contentType: "application/json"</code> 並用
+      <code class="inline">JSON.stringify(data)</code> 包裝資料。
+    </div>
+  </section>
+
+  <!-- 5. 簡寫方法 -->
+  <section id="shorthand">
+    <h2>5. 簡寫方法</h2>
+    <p>對於常見情境，jQuery 提供更簡短的寫法：</p>
+
+    <h3>$.get() — 發送 GET 請求</h3>
+<pre>$.<span class="fn">get</span>(<span class="str">"https://jsonplaceholder.typicode.com/posts/1"</span>, <span class="key">function</span> (data) {
+  console.<span class="fn">log</span>(data.title);
+});
+
+<span class="cmt">// 帶查詢參數</span>
+$.<span class="fn">get</span>(<span class="str">"/api/search"</span>, { <span class="fn">q</span>: <span class="str">"jquery"</span>, <span class="fn">page</span>: <span class="str">2</span> }, <span class="key">function</span> (data) {
+  console.<span class="fn">log</span>(data);
+});</pre>
+
+    <h3>$.post() — 發送 POST 請求</h3>
+<pre>$.<span class="fn">post</span>(<span class="str">"/api/users"</span>, { <span class="fn">name</span>: <span class="str">"王小明"</span>, <span class="fn">age</span>: <span class="str">25</span> }, <span class="key">function</span> (response) {
+  console.<span class="fn">log</span>(<span class="str">"建立成功，ID："</span> + response.id);
+});</pre>
+
+    <h3>$.getJSON() — 取得 JSON 資料</h3>
+<pre>$.<span class="fn">getJSON</span>(<span class="str">"https://jsonplaceholder.typicode.com/users"</span>, <span class="key">function</span> (users) {
+  $.<span class="fn">each</span>(users, <span class="key">function</span> (i, user) {
+    console.<span class="fn">log</span>(user.name);
+  });
+});</pre>
+
+    <h3>$(selector).load() — 直接把回應塞進元素</h3>
+<pre><span class="cmt">// 把 page.html 內 #content 區塊的內容載入到 #result</span>
+$(<span class="str">"#result"</span>).<span class="fn">load</span>(<span class="str">"page.html #content"</span>);</pre>
+  </section>
+
+  <!-- 6. 回呼處理 -->
+  <section id="callbacks">
+    <h2>6. 處理回應：done / fail / always</h2>
+    <p>
+      <code class="inline">$.ajax()</code> 回傳一個 <strong>Promise 物件</strong>（jqXHR），
+      推薦使用鏈式的 <code class="inline">.done() / .fail() / .always()</code> 來處理結果，
+      取代舊式的 <code class="inline">success / error</code> 設定參數：
+    </p>
+    <table>
+      <thead><tr><th>方法</th><th>觸發時機</th></tr></thead>
+      <tbody>
+        <tr><td><code>.done(fn)</code></td><td>請求成功時執行</td></tr>
+        <tr><td><code>.fail(fn)</code></td><td>請求失敗時執行（404、500、逾時、網路錯誤等）</td></tr>
+        <tr><td><code>.always(fn)</code></td><td>無論成功或失敗都執行</td></tr>
+      </tbody>
+    </table>
+<pre><span class="key">const</span> request = $.<span class="fn">ajax</span>({ <span class="fn">url</span>: <span class="str">"/api/data"</span> });
+
+request.<span class="fn">done</span>(data  =&gt; console.<span class="fn">log</span>(<span class="str">"成功"</span>, data));
+request.<span class="fn">fail</span>(err   =&gt; console.<span class="fn">log</span>(<span class="str">"失敗"</span>, err));
+request.<span class="fn">always</span>(()  =&gt; console.<span class="fn">log</span>(<span class="str">"結束"</span>));</pre>
+  </section>
+
+  <!-- 7. 互動範例 -->
+  <section id="demo">
+    <h2>7. 互動範例 <span class="badge">可直接執行</span></h2>
+    <p class="muted">
+      以下範例使用免費的公開測試 API
+      <code class="inline">jsonplaceholder.typicode.com</code>。
+      在瀏覽器開啟本頁後，點按鈕即可看到實際結果（需連網）。
+    </p>
+
+    <!-- 範例 A: GET -->
+    <h3>範例 A：用 $.get() 取得一篇文章</h3>
+    <div class="demo">
+      <button id="btnGet">送出 GET 請求</button>
+      <div class="output" id="outGet">尚未執行…</div>
+    </div>
+
+    <!-- 範例 B: 帶參數 + 列表 -->
+    <h3>範例 B：用 $.getJSON() 取得使用者列表</h3>
+    <div class="demo">
+      <button id="btnList">載入使用者</button>
+      <div class="output" id="outList">尚未執行…</div>
+    </div>
+
+    <!-- 範例 C: POST -->
+    <h3>範例 C：用 $.ajax() 送出 POST 建立資料</h3>
+    <div class="demo">
+      <input type="text" id="titleInput" placeholder="輸入文章標題" value="我的第一篇文章">
+      <button id="btnPost">送出 POST 請求</button>
+      <div class="output" id="outPost">尚未執行…</div>
+    </div>
+  </section>
+
+  <!-- 8. 錯誤處理 -->
+  <section id="errors">
+    <h2>8. 錯誤處理與常見問題</h2>
+
+    <h3>完整的錯誤處理範例</h3>
+<pre>$.<span class="fn">ajax</span>({
+  <span class="fn">url</span>: <span class="str">"/api/data"</span>,
+  <span class="fn">timeout</span>: <span class="str">5000</span>
+})
+.<span class="fn">fail</span>(<span class="key">function</span> (xhr, status, error) {
+  <span class="key">if</span> (status === <span class="str">"timeout"</span>) {
+    <span class="fn">alert</span>(<span class="str">"請求逾時，請稍後再試"</span>);
+  } <span class="key">else if</span> (xhr.status === <span class="str">404</span>) {
+    <span class="fn">alert</span>(<span class="str">"找不到資源"</span>);
+  } <span class="key">else if</span> (xhr.status === <span class="str">500</span>) {
+    <span class="fn">alert</span>(<span class="str">"伺服器錯誤"</span>);
+  } <span class="key">else</span> {
+    <span class="fn">alert</span>(<span class="str">"發生未知錯誤："</span> + error);
+  }
+});</pre>
+
+    <div class="warn">
+      <strong>CORS 跨域問題：</strong> 當請求的網域與目前頁面不同時，
+      瀏覽器會基於同源政策阻擋，主控台會出現
+      <code class="inline">No 'Access-Control-Allow-Origin' header</code> 錯誤。
+      這需要由<strong>伺服器端</strong>設定允許跨域，前端無法單方面解決。
+    </div>
+
+    <div class="tip">
+      <strong>小技巧：</strong> 用 <code class="inline">$(document).ajaxStart()</code> 與
+      <code class="inline">$(document).ajaxStop()</code> 可以全域控制 loading 動畫的顯示與隱藏，
+      不必在每個請求裡重複寫。
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  jQuery AJAX 教學 · 使用 jQuery 3.7.1 · 範例 API 來源：jsonplaceholder.typicode.com
+</footer>
+
+<!-- 互動範例的實作程式碼 -->
+<script>
+$(function () {
+  const API = "https://jsonplaceholder.typicode.com";
+
+  // 範例 A：$.get()
+  $("#btnGet").on("click", function () {
+    const $out = $("#outGet").text("載入中…");
+    $.get(API + "/posts/1")
+      .done(function (post) {
+        $out.html(
+          '<span class="ok">✓ 成功</span>\n' +
+          'ID: ' + post.id + '\n' +
+          '標題: ' + post.title + '\n' +
+          '內容: ' + post.body
+        );
+      })
+      .fail(function (xhr, status, error) {
+        $out.html('<span class="err">✗ 失敗：' + (error || status) + '</span>');
+      });
+  });
+
+  // 範例 B：$.getJSON()
+  $("#btnList").on("click", function () {
+    const $out = $("#outList").text("載入中…");
+    $.getJSON(API + "/users")
+      .done(function (users) {
+        let lines = '<span class="ok">✓ 取得 ' + users.length + ' 位使用者</span>\n';
+        $.each(users, function (i, u) {
+          lines += (i + 1) + ". " + u.name + " (" + u.email + ")\n";
+        });
+        $out.html(lines);
+      })
+      .fail(function (xhr, status, error) {
+        $out.html('<span class="err">✗ 失敗：' + (error || status) + '</span>');
+      });
+  });
+
+  // 範例 C：$.ajax() POST
+  $("#btnPost").on("click", function () {
+    const title = $("#titleInput").val().trim();
+    const $out = $("#outPost").text("送出中…");
+    if (!title) {
+      $out.html('<span class="err">✗ 請先輸入標題</span>');
+      return;
+    }
+    $.ajax({
+      url: API + "/posts",
+      method: "POST",
+      contentType: "application/json",
+      data: JSON.stringify({ title: title, body: "範例內容", userId: 1 })
+    })
+      .done(function (created) {
+        $out.html(
+          '<span class="ok">✓ 建立成功</span>\n' +
+          '伺服器回傳的新 ID: ' + created.id + '\n' +
+          '標題: ' + created.title
+        );
+      })
+      .fail(function (xhr, status, error) {
+        $out.html('<span class="err">✗ 失敗：' + (error || status) + '</span>');
+      });
+  });
+});
+</script>
+</body>
+</html>
