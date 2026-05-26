@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apache Kafka 詳細教學</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --text: #20262e;
+    --muted: #6b7682;
+    --accent: #e07b2b;
+    --accent-dark: #b85f17;
+    --code-bg: #1e2530;
+    --code-text: #e6edf3;
+    --border: #e3e7ec;
+    --ok: #1f9d57;
+    --err: #d6453d;
+    --blue: #2f6fb0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.75;
+  }
+  header {
+    background: linear-gradient(135deg, #231f20, #3d3a3c 55%, #b85f17);
+    color: #fff;
+    padding: 52px 24px;
+    text-align: center;
+  }
+  header h1 { margin: 0 0 10px; font-size: 2.3rem; letter-spacing: .5px; }
+  header p { margin: 0; opacity: .9; font-size: 1.05rem; }
+  header .sub { margin-top: 14px; font-size: .9rem; opacity: .75; }
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 20px 80px;
+  }
+  section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin: 22px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  h2 {
+    margin-top: 0;
+    font-size: 1.5rem;
+    border-left: 4px solid var(--accent);
+    padding-left: 12px;
+  }
+  h3 { font-size: 1.18rem; color: var(--accent-dark); margin-top: 30px; }
+  h4 { font-size: 1.02rem; color: var(--text); margin: 22px 0 6px; }
+  p { color: var(--text); }
+  ul, ol { padding-left: 24px; }
+  li { margin: 4px 0; }
+  .muted { color: var(--muted); font-size: .92rem; }
+  strong.k { color: var(--accent-dark); }
+  code.inline {
+    background: #f0ece7;
+    color: #b03e12;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: .9em;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 18px 20px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: .88rem;
+    line-height: 1.65;
+    margin: 14px 0;
+  }
+  pre .cmt { color: #7d8a99; font-style: italic; }
+  pre .key { color: #79c0ff; }
+  pre .str { color: #a5d6a3; }
+  pre .fn  { color: #ffd479; }
+  pre .num { color: #f0a868; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: .93rem;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: #faf2ea; color: var(--accent-dark); }
+  td code, th code { color: #b03e12; font-family: "Consolas", monospace; }
+  .toc {
+    background: #faf2ea;
+    border: 1px solid #f0ddc9;
+  }
+  .toc ol { margin: 8px 0 0; padding-left: 24px; columns: 2; }
+  .toc a { color: var(--accent-dark); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .tip {
+    border-left: 4px solid var(--ok);
+    background: #effaf3;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .warn {
+    border-left: 4px solid #e0a800;
+    background: #fff8e6;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .note {
+    border-left: 4px solid var(--blue);
+    background: #eef4fb;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  /* 圖表容器 */
+  .diagram {
+    background: #fffdfb;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 16px 10px;
+    margin: 20px 0;
+    text-align: center;
+    overflow-x: auto;
+  }
+  .diagram .mermaid { display: inline-block; min-width: 100%; }
+  .diagram-cap {
+    text-align: center;
+    color: var(--muted);
+    font-size: .85rem;
+    margin: 4px 0 6px;
+  }
+  /* 純 CSS partition log 視覺化 */
+  .plog { margin: 18px 0; font-size: .9rem; }
+  .prow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 10px 0;
+  }
+  .plabel {
+    min-width: 96px;
+    font-weight: 600;
+    color: var(--accent-dark);
+  }
+  .pcell {
+    width: 38px; height: 38px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid #cdd4db;
+    background: #fff;
+    border-radius: 6px;
+    font-family: "Consolas", monospace;
+    color: #45505c;
+  }
+  .pcell.new { background: #fcebd9; border-color: var(--accent); color: var(--accent-dark); font-weight: 700; }
+  .pcell.read { background: #e6f4ec; border-color: var(--ok); }
+  .parrow { color: var(--muted); margin-left: 4px; }
+  .legend { font-size: .82rem; color: var(--muted); margin-top: 6px; }
+  .legend span { display: inline-block; margin-right: 16px; }
+  .legend i {
+    display: inline-block; width: 12px; height: 12px;
+    border-radius: 3px; vertical-align: middle; margin-right: 4px;
+    border: 1px solid #cdd4db;
+  }
+  .badge {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    font-size: .72rem;
+    padding: 2px 9px;
+    border-radius: 10px;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) {
+    .two-col { grid-template-columns: 1fr; }
+    .toc ol { columns: 1; }
+    section { padding: 22px 18px; }
+  }
+  .col-box {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    background: #fff;
+  }
+  .col-box h4 { margin-top: 0; }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 30px;
+    font-size: .88rem;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Apache Kafka 詳細教學</h1>
+  <p>從核心概念到實作，搭配大量流程圖，由淺入深理解分散式事件串流</p>
+  <div class="sub">涵蓋 Broker / Topic / Partition / Producer / Consumer Group / Replication / 傳遞語意 / 實作範例</div>
+</header>
+
+<main>
+
+  <!-- 目錄 -->
+  <section class="toc">
+    <h2>目錄</h2>
+    <ol>
+      <li><a href="#what">1. 什麼是 Kafka？</a></li>
+      <li><a href="#why">2. 為什麼需要 Kafka？</a></li>
+      <li><a href="#arch">3. 整體架構與核心術語</a></li>
+      <li><a href="#topic">4. Topic、Partition 與 Offset</a></li>
+      <li><a href="#producer">5. Producer 運作機制</a></li>
+      <li><a href="#consumer">6. Consumer 與 Consumer Group</a></li>
+      <li><a href="#replication">7. Replication 與高可用</a></li>
+      <li><a href="#delivery">8. 訊息傳遞語意</a></li>
+      <li><a href="#retention">9. 資料保留與 Log Compaction</a></li>
+      <li><a href="#install">10. 安裝與啟動（KRaft）</a></li>
+      <li><a href="#cli">11. CLI 常用指令</a></li>
+      <li><a href="#code">12. 程式範例（Java / Python）</a></li>
+      <li><a href="#practice">13. 最佳實踐與常見陷阱</a></li>
+    </ol>
+  </section>
+
+  <!-- 1. 什麼是 Kafka -->
+  <section id="what">
+    <h2>1. 什麼是 Kafka？</h2>
+    <p>
+      <strong>Apache Kafka</strong> 是一個<strong class="k">分散式事件串流平台</strong>（Distributed Event Streaming Platform）。
+      最初由 LinkedIn 開發、2011 年開源，現為 Apache 頂級專案。你可以把它想成一條
+      <strong>超高吞吐、可持久化、可重播</strong>的「資料管道」：上游系統把事件不斷寫進去，下游系統各自照自己的步調讀出來。
+    </p>
+    <p>Kafka 同時具備三種能力：</p>
+    <ul>
+      <li><strong>發布／訂閱（Pub/Sub）</strong>：像訊息佇列一樣，發布者送訊息、訂閱者收訊息。</li>
+      <li><strong>持久化儲存</strong>：訊息寫到磁碟並可保留數天到永久，不是讀完就消失。</li>
+      <li><strong>串流處理</strong>：可即時對資料流做轉換、聚合（搭配 Kafka Streams／ksqlDB）。</li>
+    </ul>
+    <p>典型使用場景：</p>
+    <ul>
+      <li>微服務之間的<strong>非同步解耦</strong>（訂單、金流、庫存、通知各自獨立）</li>
+      <li><strong>日誌與指標收集</strong>（把各機器的 log 集中後送往分析系統）</li>
+      <li><strong>使用者行為追蹤</strong>（點擊、瀏覽事件即時匯流）</li>
+      <li><strong>資料管線（ETL）</strong>與資料庫變更擷取（CDC）</li>
+      <li><strong>即時運算</strong>（風控、推薦、監控告警）</li>
+    </ul>
+    <div class="tip">
+      <strong>一句話理解：</strong>傳統訊息佇列「讀完即丟」，Kafka 則是一份「可重複讀取的事件日誌（log）」——
+      訊息被讀取後仍然留著，多個下游可各自從不同位置讀，甚至可以倒帶重讀。
+    </div>
+  </section>
+
+  <!-- 2. 為什麼需要 Kafka -->
+  <section id="why">
+    <h2>2. 為什麼需要 Kafka？</h2>
+    <p>
+      想像一個電商系統：當「訂單服務」產生一筆新訂單時，<strong>庫存服務</strong>要扣庫存、<strong>通知服務</strong>要寄信、
+      <strong>分析服務</strong>要記錄。如果讓訂單服務直接呼叫每一個下游服務，會發生什麼？
+    </p>
+
+    <h3>問題：點對點直連造成 N×M 的耦合</h3>
+    <div class="diagram">
+      <div class="mermaid">
+graph LR
+  A1["訂單服務"] --> B1["庫存服務"]
+  A1 --> B2["通知服務"]
+  A1 --> B3["分析服務"]
+  A2["金流服務"] --> B1
+  A2 --> B2
+  A2 --> B3
+      </div>
+      <div class="diagram-cap">圖 2-1　每新增一個上游或下游，連線數量爆炸成長，且彼此緊密相依</div>
+    </div>
+    <p>這種設計的痛點：</p>
+    <ul>
+      <li>下游服務一掛，上游就被拖累（同步呼叫塞住、逾時）。</li>
+      <li>每多一個消費端，上游都得改程式加一條呼叫。</li>
+      <li>流量尖峰時，上游直接把下游打垮，缺乏緩衝。</li>
+    </ul>
+
+    <h3>解法：用 Kafka 當中間的「緩衝與廣播層」</h3>
+    <div class="diagram">
+      <div class="mermaid">
+graph LR
+  A1["訂單服務"] -->|發布事件| K[("Kafka")]
+  A2["金流服務"] -->|發布事件| K
+  K -->|訂閱| B1["庫存服務"]
+  K -->|訂閱| B2["通知服務"]
+  K -->|訂閱| B3["分析服務"]
+      </div>
+      <div class="diagram-cap">圖 2-2　上游只管把事件丟進 Kafka，下游各自訂閱，彼此完全解耦</div>
+    </div>
+    <p>引入 Kafka 後：</p>
+    <ul>
+      <li><strong>解耦</strong>：上游不需要知道有誰在消費；新增下游只要訂閱即可，上游零改動。</li>
+      <li><strong>削峰填谷</strong>：尖峰流量先堆在 Kafka，下游按自己能力慢慢消化，不會被打垮。</li>
+      <li><strong>容錯</strong>：下游短暫故障時，訊息仍保留在 Kafka，恢復後可繼續讀。</li>
+      <li><strong>可重播</strong>：新接入的分析系統，可以從頭重讀歷史事件。</li>
+    </ul>
+    <div class="note">
+      <strong>對比其他訊息系統：</strong>RabbitMQ 等傳統 MQ 偏向「智慧 Broker、訊息讀完即刪」；
+      Kafka 偏向「簡單 Broker、訊息持久保留、由 Consumer 自己記錄讀到哪」，因此特別適合高吞吐與資料可重播的場景。
+    </div>
+  </section>
+
+  <!-- 3. 整體架構與術語 -->
+  <section id="arch">
+    <h2>3. 整體架構與核心術語</h2>
+    <p>先看一張全景圖，再逐一解釋每個角色：</p>
+    <div class="diagram">
+      <div class="mermaid">
+graph TB
+  P1["Producer 1<br/>(訂單服務)"]
+  P2["Producer 2<br/>(金流服務)"]
+  subgraph CL["Kafka Cluster"]
+    direction LR
+    B1["Broker 1"]
+    B2["Broker 2"]
+    B3["Broker 3"]
+    CT["Controller<br/>(KRaft / ZooKeeper)<br/>管理 metadata 與選舉"]
+  end
+  CG1["Consumer Group A<br/>(庫存服務 ×2)"]
+  CG2["Consumer Group B<br/>(分析服務)"]
+  P1 --> B1
+  P1 --> B2
+  P2 --> B3
+  B1 --> CG1
+  B2 --> CG1
+  B3 --> CG2
+  CT -. 協調 .- B1
+  CT -. 協調 .- B2
+  CT -. 協調 .- B3
+      </div>
+      <div class="diagram-cap">圖 3-1　Kafka 整體架構：多個 Broker 組成 Cluster，由 Controller 協調</div>
+    </div>
+
+    <h3>核心術語對照表</h3>
+    <table>
+      <tr><th>術語</th><th>說明</th></tr>
+      <tr><td><strong>Broker</strong></td><td>一台 Kafka 伺服器（節點）。多個 Broker 組成 <strong>Cluster（叢集）</strong>，共同分擔資料儲存與讀寫。</td></tr>
+      <tr><td><strong>Topic</strong></td><td>訊息的「類別／主題」，是邏輯上的分類。例如 <code>orders</code>、<code>payments</code>。Producer 寫到某 Topic，Consumer 從某 Topic 讀。</td></tr>
+      <tr><td><strong>Partition（分區）</strong></td><td>Topic 在物理上被切成多個 Partition，每個 Partition 是一個<strong>有序、僅可追加（append-only）的 log</strong>。分區是 Kafka 平行處理與擴展的關鍵單位。</td></tr>
+      <tr><td><strong>Offset</strong></td><td>訊息在某個 Partition 中的<strong>唯一遞增編號</strong>（0,1,2,…）。Consumer 靠 Offset 記錄「我讀到哪了」。</td></tr>
+      <tr><td><strong>Producer</strong></td><td>生產者，負責把訊息發布到 Topic。</td></tr>
+      <tr><td><strong>Consumer</strong></td><td>消費者，負責從 Topic 讀取訊息。Kafka 採<strong>拉取（pull）</strong>模型，由 Consumer 主動向 Broker 要資料。</td></tr>
+      <tr><td><strong>Consumer Group</strong></td><td>一組共同消費同一 Topic 的 Consumer。組內每個 Partition 只會被<strong>一個</strong>成員消費，藉此達到負載分攤。</td></tr>
+      <tr><td><strong>Replica（副本）</strong></td><td>每個 Partition 可有多份副本，分散在不同 Broker。其中一份是 <strong>Leader</strong>（處理讀寫），其餘是 <strong>Follower</strong>（同步備援）。</td></tr>
+      <tr><td><strong>Controller</strong></td><td>負責叢集 metadata 管理與 Leader 選舉。舊版依賴 <strong>ZooKeeper</strong>，新版改用內建的 <strong>KRaft</strong>（Raft 共識）。</td></tr>
+    </table>
+    <div class="note">
+      <strong>ZooKeeper 還是 KRaft？</strong> Kafka 2.8 起引入 KRaft 模式以移除對 ZooKeeper 的依賴，
+      3.x 逐步成熟並成為新部署的建議，<strong>Kafka 4.0 已完全移除 ZooKeeper</strong>。新專案直接用 KRaft 即可。
+    </div>
+  </section>
+
+  <!-- 4. Topic / Partition / Offset -->
+  <section id="topic">
+    <h2>4. Topic、Partition 與 Offset</h2>
+    <p>
+      這是 Kafka 最核心、也最常被誤解的部分。一個 Topic 由多個 Partition 組成；
+      每個 Partition 都是一條獨立的「日誌」，新訊息只會被<strong>追加到尾端</strong>，並分配一個遞增的 Offset。
+    </p>
+
+    <h3>Partition 就是一條 append-only 的日誌</h3>
+    <div class="plog">
+      <div class="prow">
+        <span class="plabel">Partition 0</span>
+        <span class="pcell">0</span><span class="pcell">1</span><span class="pcell">2</span>
+        <span class="pcell">3</span><span class="pcell">4</span><span class="pcell new">5</span>
+        <span class="parrow">← Producer 從尾端追加新訊息</span>
+      </div>
+      <div class="prow">
+        <span class="plabel">Partition 1</span>
+        <span class="pcell">0</span><span class="pcell">1</span><span class="pcell">2</span>
+        <span class="pcell new">3</span>
+        <span class="parrow">← 各 Partition 的 Offset 各自獨立計算</span>
+      </div>
+      <div class="prow">
+        <span class="plabel">Partition 2</span>
+        <span class="pcell">0</span><span class="pcell">1</span><span class="pcell">2</span>
+        <span class="pcell">3</span><span class="pcell new">4</span>
+      </div>
+      <div class="legend">
+        <span><i style="background:#fff"></i>已寫入的訊息（數字＝Offset）</span>
+        <span><i style="background:#fcebd9;border-color:#e07b2b"></i>最新追加的訊息</span>
+      </div>
+    </div>
+    <p>幾個關鍵性質：</p>
+    <ul>
+      <li><strong>Offset 是「分區內」的編號</strong>：Partition 0 的 offset 5 和 Partition 1 的 offset 5 是完全不同的兩筆訊息。</li>
+      <li><strong>訊息不可變</strong>：寫入後不能修改，只能等過期被清掉（retention）。</li>
+      <li><strong>讀取不刪除</strong>：Consumer 讀過的訊息仍留在 log 中，所以可以重播。</li>
+    </ul>
+
+    <h3>順序保證：只在單一 Partition 內成立</h3>
+    <div class="warn">
+      <strong>非常重要：</strong>Kafka <strong>只保證「同一個 Partition 內」的訊息順序</strong>，
+      <strong>不保證跨 Partition 的全域順序</strong>。如果你的業務要求某類訊息嚴格有序（例如同一帳戶的交易），
+      就必須讓這些訊息進到<strong>同一個 Partition</strong>——做法是給它們相同的 <strong>Key</strong>（見下一節）。
+    </div>
+
+    <h3>為什麼要分區？</h3>
+    <ul>
+      <li><strong>水平擴展</strong>：不同 Partition 可放在不同 Broker，分攤儲存與流量。</li>
+      <li><strong>平行消費</strong>：一個 Consumer Group 內，最多可有「Partition 數量」個 Consumer 同時並行讀取。<br/>
+        ⇒ <strong>Partition 數＝消費端並行度的上限</strong>。</li>
+    </ul>
+    <div class="tip">
+      <strong>分區數怎麼抓？</strong> 太少會限制吞吐與並行度；太多會增加開銷（檔案數、rebalance 時間、端到端延遲）。
+      常見做法是依目標吞吐量估算，並預留成長空間。注意：<strong>Partition 數量只能增加、不能減少</strong>。
+    </div>
+  </section>
+
+  <!-- 5. Producer -->
+  <section id="producer">
+    <h2>5. Producer 運作機制</h2>
+    <p>Producer 把訊息送出時，最關鍵的兩個決策是：<strong>這筆訊息要進哪個 Partition？</strong>以及<strong>要等多嚴格的確認？</strong></p>
+
+    <h3>分區策略：Key 決定一切</h3>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart TB
+  S["Producer 送出一筆訊息"] --> Q{"訊息有指定 Key 嗎？"}
+  Q -->|"有 Key"| H["計算 hash(Key) % 分區數"]
+  H --> R["固定送往同一個 Partition<br/>→ 同一 Key 的訊息嚴格有序"]
+  Q -->|"沒有 Key"| RR["Sticky / Round-robin<br/>平均分散到各 Partition<br/>→ 吞吐最大化，但不保證跨分區順序"]
+      </div>
+      <div class="diagram-cap">圖 5-1　Producer 分區策略：有沒有 Key 是關鍵分水嶺</div>
+    </div>
+    <ul>
+      <li><strong>指定 Key</strong>（例如 <code>user-123</code>）：相同 Key 一定落在同一 Partition，因此該 Key 的訊息<strong>順序被保證</strong>。適合需要有序的場景。</li>
+      <li><strong>不指定 Key</strong>：Kafka 用 Sticky Partitioning（新版預設）儘量塞滿同一批次再換分區，達到最佳吞吐。</li>
+    </ul>
+    <div class="warn">
+      <strong>Key 選擇要小心熱點：</strong>若某個 Key（例如某大客戶）流量特別大，會造成該 Partition 變成熱點、負載不均。設計 Key 時要兼顧「順序需求」與「分佈均勻」。
+    </div>
+
+    <h3>寫入確認機制：acks</h3>
+    <p>Producer 送出後要不要等 Broker 確認、等到什麼程度，由 <code>acks</code> 參數決定，這直接影響<strong>可靠性與效能的取捨</strong>。</p>
+    <div class="diagram">
+      <div class="mermaid">
+sequenceDiagram
+  participant P as Producer
+  participant L as Leader 副本
+  participant F1 as Follower 1
+  participant F2 as Follower 2
+  P->>L: 1. 送出訊息
+  L->>L: 2. 寫入本地 log
+  L->>F1: 3. 同步複製
+  L->>F2: 3. 同步複製
+  F1-->>L: 4. 已同步
+  F2-->>L: 4. 已同步
+  L-->>P: 5. 回傳 ack
+  Note over P,F2: acks=0 不等；acks=1 等步驟2；acks=all 等步驟4 全部 ISR 同步
+      </div>
+      <div class="diagram-cap">圖 5-2　acks=all 時，Leader 要等所有同步副本（ISR）都複製完才回 ack</div>
+    </div>
+    <table>
+      <tr><th><code>acks</code></th><th>行為</th><th>可靠性 / 效能</th></tr>
+      <tr><td><code>0</code></td><td>送出就不管，不等任何確認</td><td>最快，但可能丟訊息</td></tr>
+      <tr><td><code>1</code></td><td>等 Leader 寫入本地 log 即回</td><td>折衷；Leader 在副本同步前掛掉仍可能丟</td></tr>
+      <tr><td><code>all</code> / <code>-1</code></td><td>等所有 ISR 都同步完才回</td><td>最可靠（搭配 <code>min.insync.replicas</code>），延遲較高</td></tr>
+    </table>
+
+    <h3>批次與冪等性</h3>
+    <ul>
+      <li><strong>批次（Batching）</strong>：Producer 會把多筆訊息累積成一批再送（受 <code>batch.size</code>、<code>linger.ms</code> 控制），大幅提升吞吐。</li>
+      <li><strong>冪等性（<code>enable.idempotence=true</code>）</strong>：避免因重試造成的<strong>重複寫入</strong>，讓「同一筆訊息」在 Partition 內只會出現一次。新版 Producer 預設開啟。</li>
+      <li><strong>交易（Transactions）</strong>：跨多個 Partition 的原子寫入，是達成 Exactly-once 的基礎（見第 8 節）。</li>
+    </ul>
+  </section>
+
+  <!-- 6. Consumer / Consumer Group -->
+  <section id="consumer">
+    <h2>6. Consumer 與 Consumer Group</h2>
+    <p>
+      Consumer 採<strong>拉取（pull）</strong>模型：不斷呼叫 <code>poll()</code> 向 Broker 要新訊息。
+      多個 Consumer 可組成一個 <strong>Consumer Group</strong> 來分攤同一個 Topic 的負載。
+    </p>
+
+    <h3>核心規則：一個 Partition 在組內只給一個 Consumer</h3>
+    <div class="diagram">
+      <div class="mermaid">
+graph TB
+  subgraph T["Topic: orders（3 個 Partition）"]
+    P0["Partition 0"]
+    P1["Partition 1"]
+    P2["Partition 2"]
+  end
+  subgraph G["Consumer Group: billing"]
+    C1["Consumer A"]
+    C2["Consumer B"]
+  end
+  P0 --> C1
+  P1 --> C1
+  P2 --> C2
+      </div>
+      <div class="diagram-cap">圖 6-1　3 個 Partition 分給 2 個 Consumer：A 拿到 0、1，B 拿到 2</div>
+    </div>
+    <p>由此推出幾個重要結論：</p>
+    <ul>
+      <li>組內 <strong>Consumer 數 ≤ Partition 數</strong> 才能充分平行；多出來的 Consumer 會<strong>閒置</strong>。</li>
+      <li>想提高消費並行度，要先增加 Partition 數。</li>
+      <li><strong>不同的 Consumer Group 彼此獨立</strong>：同一筆訊息會被「每個 group」各自完整消費一次（這就是 Pub/Sub 廣播）。</li>
+    </ul>
+
+    <h3>多個 Consumer Group：廣播效果</h3>
+    <div class="diagram">
+      <div class="mermaid">
+graph LR
+  K[("Topic: orders")]
+  K --> G1["Group: billing<br/>(計費)"]
+  K --> G2["Group: analytics<br/>(分析)"]
+  K --> G3["Group: notify<br/>(通知)"]
+      </div>
+      <div class="diagram-cap">圖 6-2　每個 Group 都能完整讀到全部訊息，各自維護自己的進度</div>
+    </div>
+
+    <h3>Offset 提交：記錄「我讀到哪了」</h3>
+    <p>
+      Consumer 把處理進度（Offset）<strong>提交（commit）</strong>到 Kafka 內部一個特殊 Topic <code>__consumer_offsets</code>。
+      下次重啟或 rebalance 後，就從上次 commit 的位置繼續讀。
+    </p>
+    <ul>
+      <li><strong>自動提交</strong>（<code>enable.auto.commit=true</code>）：每隔一段時間自動 commit，方便但可能在「已 commit、未處理完」時丟訊息。</li>
+      <li><strong>手動提交</strong>（<code>false</code>）：自己控制在<strong>處理完之後</strong>才 commit，可靠性更高（見第 8 節傳遞語意）。</li>
+      <li><strong>auto.offset.reset</strong>：當這個 group 沒有已存的 offset 時要從哪開始——<code>earliest</code>（從頭）或 <code>latest</code>（只讀新的）。</li>
+    </ul>
+
+    <h3>Rebalance：成員變動時重新分配</h3>
+    <p>當 Group 有 Consumer 加入／離開，或 Partition 數量改變時，Kafka 會觸發 <strong>Rebalance</strong>，重新把 Partition 分配給現有成員。</p>
+    <div class="diagram">
+      <div class="mermaid">
+stateDiagram-v2
+  Stable: 穩定運作
+  Rebalancing: 重新平衡中
+  [*] --> Stable
+  Stable --> Rebalancing: Consumer 加入或離開
+  Rebalancing --> Stable: 重新分配 Partition 完成
+  Stable --> Rebalancing: Partition 數量改變
+      </div>
+      <div class="diagram-cap">圖 6-3　Rebalance 狀態轉換：期間消費會短暫暫停</div>
+    </div>
+    <div class="warn">
+      <strong>Rebalance 不是免費的：</strong>過程中整個 Group 的消費會短暫停止（Stop-the-world，新版有 Cooperative 漸進式 rebalance 改善）。
+      頻繁的 rebalance（例如處理太慢導致被踢出 group）會嚴重影響吞吐，要透過調整 <code>max.poll.interval.ms</code>、<code>session.timeout.ms</code> 等避免。
+    </div>
+  </section>
+
+  <!-- 7. Replication -->
+  <section id="replication">
+    <h2>7. Replication 與高可用</h2>
+    <p>
+      為了避免單一 Broker 故障就遺失資料，每個 Partition 可以有多份<strong>副本（Replica）</strong>，
+      由 <code>replication.factor</code> 設定（例如 3）。副本分散在不同 Broker 上。
+    </p>
+
+    <h3>Leader 與 Follower</h3>
+    <div class="diagram">
+      <div class="mermaid">
+graph LR
+  P["Producer / Consumer"] -->|"只讀寫 Leader"| L
+  subgraph B1["Broker 1"]
+    L["Partition 0<br/>Leader"]
+  end
+  subgraph B2["Broker 2"]
+    F1["Partition 0<br/>Follower"]
+  end
+  subgraph B3["Broker 3"]
+    F2["Partition 0<br/>Follower"]
+  end
+  L -->|複製| F1
+  L -->|複製| F2
+      </div>
+      <div class="diagram-cap">圖 7-1　每個 Partition 有一個 Leader 處理所有讀寫，Follower 持續同步</div>
+    </div>
+    <ul>
+      <li>同一 Partition 的所有讀寫<strong>都只經過 Leader</strong>；Follower 只負責同步資料、隨時待命。</li>
+      <li>不同 Partition 的 Leader 會分散在不同 Broker 上，達到負載平衡。</li>
+    </ul>
+
+    <h3>ISR（In-Sync Replicas）與容錯</h3>
+    <p>
+      <strong>ISR</strong> 是「目前與 Leader 保持同步」的副本集合。當 Leader 故障時，Kafka 會從 ISR 中<strong>選出新的 Leader</strong>，服務不中斷。
+    </p>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart TB
+  D["Leader Broker 故障"] --> C["Controller 偵測到"]
+  C --> E{"ISR 中還有副本嗎？"}
+  E -->|"有"| N["從 ISR 選出新 Leader<br/>→ 服務繼續，資料不丟"]
+  E -->|"沒有"| U["視設定而定：<br/>等待 / 或啟用 unclean 選舉（可能丟資料）"]
+      </div>
+      <div class="diagram-cap">圖 7-2　Leader 故障後的自動故障轉移（failover）流程</div>
+    </div>
+    <div class="tip">
+      <strong>不丟資料的黃金組合：</strong>Producer 設 <code>acks=all</code> ＋ Topic 設 <code>replication.factor=3</code> ＋ <code>min.insync.replicas=2</code>。
+      意思是「至少要有 2 份副本同步成功才算寫入成功」，即使掛掉 1 台 Broker 仍能正常運作且不丟資料。
+    </div>
+  </section>
+
+  <!-- 8. 傳遞語意 -->
+  <section id="delivery">
+    <h2>8. 訊息傳遞語意</h2>
+    <p>「一筆訊息會被處理幾次」是分散式系統的經典問題。Kafka 支援三種傳遞語意，取捨在於<strong>可靠性 vs 效能 vs 複雜度</strong>。</p>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart TB
+  Q1{"可以容忍偶爾漏掉訊息嗎？"}
+  Q1 -->|"可以（重效能）"| AMO["At-most-once 至多一次<br/>先 commit offset，再處理<br/>處理失敗就漏掉，不重複"]
+  Q1 -->|"不行（不能漏）"| Q2{"可以容忍重複處理嗎？"}
+  Q2 -->|"可以（最常見）"| ALO["At-least-once 至少一次<br/>先處理，再 commit offset<br/>當機重試會重複 → 下游需冪等"]
+  Q2 -->|"不行（要剛好一次）"| EOS["Exactly-once 精準一次<br/>冪等 Producer + 交易<br/>最嚴格，設定較複雜"]
+      </div>
+      <div class="diagram-cap">圖 8-1　依業務需求選擇傳遞語意的決策樹</div>
+    </div>
+    <table>
+      <tr><th>語意</th><th>實作關鍵</th><th>結果</th><th>適用場景</th></tr>
+      <tr><td><strong>At-most-once</strong><br/>至多一次</td><td>讀到就先 commit，再處理</td><td>可能漏、不會重複</td><td>可容忍少量遺失的指標、監控</td></tr>
+      <tr><td><strong>At-least-once</strong><br/>至少一次</td><td>處理完才 commit（手動 commit）</td><td>不會漏、可能重複</td><td>最常見；搭配下游<strong>冪等</strong>處理</td></tr>
+      <tr><td><strong>Exactly-once</strong><br/>精準一次</td><td>冪等 Producer ＋ 交易（read-process-write）</td><td>不漏不重</td><td>金流、計費等不容許誤差</td></tr>
+    </table>
+    <div class="note">
+      <strong>實務建議：</strong>多數系統選擇 <strong>At-least-once + 下游冪等</strong>——也就是讓你的處理邏輯「重複執行結果也一樣」
+      （例如用訊息唯一 ID 去重、用 UPSERT 取代 INSERT）。這比直接上 Exactly-once 簡單可靠許多。
+    </div>
+  </section>
+
+  <!-- 9. Retention / Compaction -->
+  <section id="retention">
+    <h2>9. 資料保留與 Log Compaction</h2>
+    <p>訊息不會永遠堆著，Kafka 提供兩種清理策略（<code>cleanup.policy</code>）：</p>
+
+    <h3>① delete：依時間或大小刪除（預設）</h3>
+    <ul>
+      <li><code>log.retention.hours</code>：保留時間，預設 <strong>168 小時（7 天）</strong>。</li>
+      <li><code>log.retention.bytes</code>：每個 Partition 的大小上限。</li>
+      <li>超過門檻的舊訊息（整段 segment）會被刪除，與有沒有被消費過無關。</li>
+    </ul>
+
+    <h3>② compact：只保留每個 Key 的最新值</h3>
+    <div class="plog">
+      <div class="prow">
+        <span class="plabel">壓縮前</span>
+        <span class="pcell">A=1</span><span class="pcell">B=1</span><span class="pcell">A=2</span>
+        <span class="pcell">C=1</span><span class="pcell">A=3</span><span class="pcell">B=2</span>
+      </div>
+      <div class="prow">
+        <span class="plabel">壓縮後</span>
+        <span class="pcell read">C=1</span><span class="pcell read">A=3</span><span class="pcell read">B=2</span>
+        <span class="parrow">← 每個 Key 只留最後一筆</span>
+      </div>
+    </div>
+    <p>
+      Log Compaction 適合「<strong>狀態快照</strong>」類的資料——你只在乎每個 Key 的<strong>最新狀態</strong>，不需要完整歷史。
+      典型用途是 Kafka 內部的 <code>__consumer_offsets</code>、以及 Kafka Streams 的狀態 changelog。
+    </p>
+    <div class="tip">
+      <strong>怎麼選？</strong> 事件流（如點擊、交易紀錄）用 <strong>delete</strong>；
+      「最新狀態表」（如使用者目前的設定、商品目前的價格）用 <strong>compact</strong>。
+    </div>
+  </section>
+
+  <!-- 10. 安裝啟動 -->
+  <section id="install">
+    <h2>10. 安裝與啟動（KRaft 模式）<span class="badge">動手做</span></h2>
+    <p>以下示範 Kafka 3.x 用內建 <strong>KRaft</strong> 模式啟動單機環境（不需要 ZooKeeper）。先到官網下載並解壓 Kafka，進入目錄後：</p>
+<pre><span class="cmt"># 1) 產生一個唯一的 Cluster ID</span>
+KAFKA_CLUSTER_ID=<span class="str">"$(bin/kafka-storage.sh random-uuid)"</span>
+
+<span class="cmt"># 2) 用該 ID 格式化儲存目錄</span>
+bin/kafka-storage.sh format -t <span class="str">$KAFKA_CLUSTER_ID</span> -c config/kraft/server.properties
+
+<span class="cmt"># 3) 啟動 Broker</span>
+bin/kafka-server-start.sh config/kraft/server.properties</pre>
+    <div class="note">
+      <strong>Windows 使用者：</strong>把上面的 <code>bin/xxx.sh</code> 換成 <code>bin\windows\xxx.bat</code> 即可，例如
+      <code>bin\windows\kafka-server-start.bat</code>。
+    </div>
+
+    <h3>更省事：用 Docker</h3>
+<pre><span class="cmt"># 拉起官方 Kafka 映像（KRaft 單機）</span>
+docker run -d --name kafka -p <span class="num">9092</span>:<span class="num">9092</span> apache/kafka:latest
+
+<span class="cmt"># 進到容器內就能用 CLI 工具</span>
+docker exec -it kafka /bin/bash</pre>
+  </section>
+
+  <!-- 11. CLI -->
+  <section id="cli">
+    <h2>11. CLI 常用指令</h2>
+    <p>Kafka 內附的命令列工具放在 <code>bin/</code> 下，最常用的幾個（注意新版統一用 <code>--bootstrap-server</code>）：</p>
+
+    <h4>建立 / 查看 Topic</h4>
+<pre><span class="cmt"># 建立 topic：3 個分區、複本數 3</span>
+bin/kafka-topics.sh --create \
+  --topic orders \
+  --bootstrap-server localhost:<span class="num">9092</span> \
+  --partitions <span class="num">3</span> \
+  --replication-factor <span class="num">3</span>
+
+<span class="cmt"># 列出所有 topic</span>
+bin/kafka-topics.sh --list --bootstrap-server localhost:<span class="num">9092</span>
+
+<span class="cmt"># 查看 topic 詳情（分區、Leader、ISR）</span>
+bin/kafka-topics.sh --describe --topic orders --bootstrap-server localhost:<span class="num">9092</span></pre>
+
+    <h4>收發訊息（測試用）</h4>
+<pre><span class="cmt"># 啟動 console producer，之後每行輸入就是一筆訊息</span>
+bin/kafka-console-producer.sh --topic orders --bootstrap-server localhost:<span class="num">9092</span>
+
+<span class="cmt"># 啟動 console consumer，從頭開始讀</span>
+bin/kafka-console-consumer.sh --topic orders --from-beginning \
+  --bootstrap-server localhost:<span class="num">9092</span>
+
+<span class="cmt"># 帶 key 一起讀（觀察分區行為）</span>
+bin/kafka-console-consumer.sh --topic orders --from-beginning \
+  --property print.key=<span class="key">true</span> --property key.separator=<span class="str">" : "</span> \
+  --bootstrap-server localhost:<span class="num">9092</span></pre>
+
+    <h4>監控 Consumer Group（看 lag）</h4>
+<pre><span class="cmt"># 查看某個 group 各分區的 offset 與 lag（落後量）</span>
+bin/kafka-consumer-groups.sh --describe --group billing-group \
+  --bootstrap-server localhost:<span class="num">9092</span></pre>
+    <div class="tip">
+      <strong>Lag（落後量）</strong>＝ Partition 的最新 offset − Consumer 已 commit 的 offset。
+      Lag 持續變大代表消費速度跟不上生產速度，是最重要的健康指標之一。
+    </div>
+  </section>
+
+  <!-- 12. 程式範例 -->
+  <section id="code">
+    <h2>12. 程式範例（Java / Python）</h2>
+
+    <h3>Java：Producer</h3>
+<pre><span class="key">import</span> org.apache.kafka.clients.producer.*;
+<span class="key">import</span> java.util.Properties;
+
+<span class="key">public class</span> <span class="fn">SimpleProducer</span> {
+  <span class="key">public static void</span> <span class="fn">main</span>(String[] args) {
+    Properties props = <span class="key">new</span> Properties();
+    props.put(<span class="str">"bootstrap.servers"</span>, <span class="str">"localhost:9092"</span>);
+    props.put(<span class="str">"key.serializer"</span>, <span class="str">"org.apache.kafka.common.serialization.StringSerializer"</span>);
+    props.put(<span class="str">"value.serializer"</span>, <span class="str">"org.apache.kafka.common.serialization.StringSerializer"</span>);
+    props.put(<span class="str">"acks"</span>, <span class="str">"all"</span>);                 <span class="cmt">// 等所有 ISR 確認，最可靠</span>
+    props.put(<span class="str">"enable.idempotence"</span>, <span class="str">"true"</span>);  <span class="cmt">// 開啟冪等，避免重複寫入</span>
+
+    Producer&lt;String, String&gt; producer = <span class="key">new</span> KafkaProducer&lt;&gt;(props);
+    <span class="key">for</span> (<span class="key">int</span> i = <span class="num">0</span>; i &lt; <span class="num">10</span>; i++) {
+      <span class="cmt">// 用 key（user-i）決定分區，保證同一 user 的訊息有序</span>
+      ProducerRecord&lt;String, String&gt; record =
+          <span class="key">new</span> ProducerRecord&lt;&gt;(<span class="str">"orders"</span>, <span class="str">"user-"</span> + i, <span class="str">"金額:"</span> + (i * <span class="num">100</span>));
+
+      producer.send(record, (metadata, ex) -&gt; {
+        <span class="key">if</span> (ex == <span class="key">null</span>)
+          System.out.printf(<span class="str">"送達 partition=%d offset=%d%n"</span>,
+              metadata.partition(), metadata.offset());
+        <span class="key">else</span>
+          ex.printStackTrace();
+      });
+    }
+    producer.flush();   <span class="cmt">// 確保緩衝區的訊息都送出</span>
+    producer.close();
+  }
+}</pre>
+
+    <h3>Java：Consumer</h3>
+<pre><span class="key">import</span> org.apache.kafka.clients.consumer.*;
+<span class="key">import</span> java.time.Duration;
+<span class="key">import</span> java.util.*;
+
+<span class="key">public class</span> <span class="fn">SimpleConsumer</span> {
+  <span class="key">public static void</span> <span class="fn">main</span>(String[] args) {
+    Properties props = <span class="key">new</span> Properties();
+    props.put(<span class="str">"bootstrap.servers"</span>, <span class="str">"localhost:9092"</span>);
+    props.put(<span class="str">"group.id"</span>, <span class="str">"billing-group"</span>);       <span class="cmt">// 同 group 共享分區</span>
+    props.put(<span class="str">"key.deserializer"</span>, <span class="str">"org.apache.kafka.common.serialization.StringDeserializer"</span>);
+    props.put(<span class="str">"value.deserializer"</span>, <span class="str">"org.apache.kafka.common.serialization.StringDeserializer"</span>);
+    props.put(<span class="str">"auto.offset.reset"</span>, <span class="str">"earliest"</span>);    <span class="cmt">// 沒 offset 時從頭讀</span>
+    props.put(<span class="str">"enable.auto.commit"</span>, <span class="str">"false"</span>);     <span class="cmt">// 改手動 commit，更可靠</span>
+
+    KafkaConsumer&lt;String, String&gt; consumer = <span class="key">new</span> KafkaConsumer&lt;&gt;(props);
+    consumer.subscribe(Collections.singletonList(<span class="str">"orders"</span>));
+
+    <span class="key">while</span> (<span class="key">true</span>) {
+      ConsumerRecords&lt;String, String&gt; records = consumer.poll(Duration.ofMillis(<span class="num">500</span>));
+      <span class="key">for</span> (ConsumerRecord&lt;String, String&gt; r : records) {
+        System.out.printf(<span class="str">"收到 key=%s value=%s partition=%d offset=%d%n"</span>,
+            r.key(), r.value(), r.partition(), r.offset());
+      }
+      consumer.commitSync();   <span class="cmt">// 全部處理完才提交 offset（at-least-once）</span>
+    }
+  }
+}</pre>
+
+    <h3>Python：Producer（confluent-kafka）</h3>
+<pre><span class="key">from</span> confluent_kafka <span class="key">import</span> Producer
+
+producer = Producer({<span class="str">'bootstrap.servers'</span>: <span class="str">'localhost:9092'</span>})
+
+<span class="key">def</span> <span class="fn">delivery_report</span>(err, msg):
+    <span class="key">if</span> err:
+        print(<span class="str">f'送出失敗: {err}'</span>)
+    <span class="key">else</span>:
+        print(<span class="str">f'送達 {msg.topic()} [{msg.partition()}] offset {msg.offset()}'</span>)
+
+<span class="key">for</span> i <span class="key">in</span> range(<span class="num">10</span>):
+    producer.produce(<span class="str">'orders'</span>, key=<span class="str">f'user-{i}'</span>,
+                     value=<span class="str">f'金額:{i*100}'</span>, callback=delivery_report)
+
+producer.flush()   <span class="cmt"># 送出緩衝區所有訊息</span></pre>
+
+    <h3>Python：Consumer（confluent-kafka）</h3>
+<pre><span class="key">from</span> confluent_kafka <span class="key">import</span> Consumer
+
+consumer = Consumer({
+    <span class="str">'bootstrap.servers'</span>: <span class="str">'localhost:9092'</span>,
+    <span class="str">'group.id'</span>: <span class="str">'billing-group'</span>,
+    <span class="str">'auto.offset.reset'</span>: <span class="str">'earliest'</span>,
+    <span class="str">'enable.auto.commit'</span>: <span class="key">False</span>,   <span class="cmt"># 手動 commit</span>
+})
+consumer.subscribe([<span class="str">'orders'</span>])
+
+<span class="key">try</span>:
+    <span class="key">while</span> <span class="key">True</span>:
+        msg = consumer.poll(<span class="num">1.0</span>)         <span class="cmt"># 最多等 1 秒</span>
+        <span class="key">if</span> msg <span class="key">is</span> <span class="key">None</span>:
+            <span class="key">continue</span>
+        <span class="key">if</span> msg.error():
+            print(<span class="str">f'錯誤: {msg.error()}'</span>)
+            <span class="key">continue</span>
+        print(<span class="str">f'收到 key={msg.key()} value={msg.value().decode()} '</span>
+              <span class="str">f'partition={msg.partition()} offset={msg.offset()}'</span>)
+        consumer.commit(msg)              <span class="cmt"># 處理完才提交</span>
+<span class="key">finally</span>:
+    consumer.close()</pre>
+  </section>
+
+  <!-- 13. 最佳實踐 -->
+  <section id="practice">
+    <h2>13. 最佳實踐與常見陷阱</h2>
+
+    <div class="two-col">
+      <div class="col-box">
+        <h4>✅ 建議做法</h4>
+        <ul>
+          <li>可靠性組合：<code>acks=all</code> ＋ <code>replication.factor=3</code> ＋ <code>min.insync.replicas=2</code>。</li>
+          <li>需要順序的訊息一律帶<strong>相同 Key</strong>。</li>
+          <li>用<strong>手動 commit</strong>，並在處理完成後才提交。</li>
+          <li>下游處理保持<strong>冪等</strong>（用唯一 ID 去重、UPSERT）。</li>
+          <li>持續監控 <strong>Consumer Lag</strong> 與 ISR 數量。</li>
+          <li>用 <strong>Schema Registry（Avro/Protobuf）</strong>管理訊息結構演進。</li>
+          <li>Partition 數預留成長空間，一開始就估好。</li>
+        </ul>
+      </div>
+      <div class="col-box">
+        <h4>⚠️ 常見陷阱</h4>
+        <ul>
+          <li>以為「全 Topic 有序」——其實<strong>只在單一 Partition 內</strong>有序。</li>
+          <li>Consumer 數量開超過 Partition 數，多的<strong>白白閒置</strong>。</li>
+          <li>處理太慢超過 <code>max.poll.interval.ms</code>，被踢出 group 引發<strong>rebalance 風暴</strong>。</li>
+          <li>用 <code>acks=1</code> 卻期待絕不丟訊息。</li>
+          <li>忘記 Partition 數<strong>只能增不能減</strong>。</li>
+          <li>把 Kafka 當資料庫做隨機查詢（它擅長的是順序讀寫的串流）。</li>
+          <li>at-least-once 下未做去重，導致下游<strong>重複處理</strong>。</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>整條資料流的全貌</h3>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart LR
+  A["應用程式<br/>產生事件"] --> P["Producer<br/>選分區 + acks"]
+  P --> T["Topic<br/>分成多個 Partition"]
+  T --> RP["Replication<br/>Leader/Follower + ISR"]
+  RP --> CG["Consumer Group<br/>分攤 Partition"]
+  CG --> H["處理 + 手動 commit offset"]
+  H --> O["寫入下游<br/>(DB / 其他 Topic / 分析)"]
+      </div>
+      <div class="diagram-cap">圖 13-1　一筆事件從產生到落地的完整旅程</div>
+    </div>
+
+    <div class="tip">
+      <strong>學習路徑建議：</strong>先用第 10、11 節在本機跑起一個單機 Kafka，
+      用 console producer/consumer 親手送收訊息、觀察分區與 offset 行為；
+      接著用第 12 節的程式範例串成 Producer→Consumer；
+      最後再深入 acks、ISR、傳遞語意與 Kafka Streams。<strong>動手做，概念會清楚非常多。</strong>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Apache Kafka 詳細教學 · 概念說明搭配 Mermaid 流程圖 · 僅供學習參考
+</footer>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#fcefe2',
+      primaryBorderColor: '#e07b2b',
+      primaryTextColor: '#231f20',
+      lineColor: '#9aa3ad',
+      secondaryColor: '#eef4fb',
+      tertiaryColor: '#f6f7f9',
+      fontFamily: 'Segoe UI, Microsoft JhengHei, sans-serif',
+      fontSize: '14px'
+    },
+    flowchart: { curve: 'basis', useMaxWidth: true },
+    sequence: { useMaxWidth: true }
+  });
+</script>
+</body>
+</html>
