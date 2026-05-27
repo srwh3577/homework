@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Java Lambda 與 Stream API 詳細教學</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #f7f6fb;
+    --card: #ffffff;
+    --text: #221f2e;
+    --muted: #6a6580;
+    --accent: #6d4ad6;
+    --accent-dark: #553c9a;
+    --code-bg: #1f1b2e;
+    --code-text: #e8e6f3;
+    --border: #e6e2f0;
+    --ok: #1f9d57;
+    --err: #d6453d;
+    --orange: #e07b2b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.75;
+  }
+  header {
+    background: linear-gradient(135deg, #2d1b54, #5b3aa6 55%, #7c5cdb);
+    color: #fff;
+    padding: 52px 24px;
+    text-align: center;
+  }
+  header h1 { margin: 0 0 10px; font-size: 2.2rem; letter-spacing: .5px; }
+  header p { margin: 0; opacity: .92; font-size: 1.05rem; }
+  header .sub { margin-top: 14px; font-size: .9rem; opacity: .78; }
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 20px 80px;
+  }
+  section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin: 22px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  h2 {
+    margin-top: 0;
+    font-size: 1.5rem;
+    border-left: 4px solid var(--accent);
+    padding-left: 12px;
+  }
+  h3 { font-size: 1.18rem; color: var(--accent-dark); margin-top: 30px; }
+  h4 { font-size: 1.02rem; color: var(--text); margin: 22px 0 6px; }
+  p { color: var(--text); }
+  ul, ol { padding-left: 24px; }
+  li { margin: 4px 0; }
+  .muted { color: var(--muted); font-size: .92rem; }
+  strong.k { color: var(--accent-dark); }
+  code.inline {
+    background: #efeafb;
+    color: #5b3aa6;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: .9em;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 18px 20px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: .88rem;
+    line-height: 1.65;
+    margin: 14px 0;
+  }
+  pre .cmt { color: #8b87a0; font-style: italic; }
+  pre .key { color: #c4a7ff; }
+  pre .str { color: #a5d6a3; }
+  pre .fn  { color: #ffd479; }
+  pre .num { color: #f0a868; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: .93rem;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: #f0ebfb; color: var(--accent-dark); }
+  td code, th code { color: #5b3aa6; font-family: "Consolas", monospace; }
+  .toc {
+    background: #f0ebfb;
+    border: 1px solid #ddd0f5;
+  }
+  .toc ol { margin: 8px 0 0; padding-left: 24px; columns: 2; }
+  .toc a { color: var(--accent-dark); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .tip {
+    border-left: 4px solid var(--ok);
+    background: #effaf3;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .warn {
+    border-left: 4px solid #e0a800;
+    background: #fff8e6;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .note {
+    border-left: 4px solid var(--accent);
+    background: #f0ebfb;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  /* 圖表容器 */
+  .diagram {
+    background: #fcfbff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 16px 10px;
+    margin: 20px 0;
+    text-align: center;
+    overflow-x: auto;
+  }
+  .diagram .mermaid { display: inline-block; min-width: 100%; }
+  .diagram-cap {
+    text-align: center;
+    color: var(--muted);
+    font-size: .85rem;
+    margin: 4px 0 6px;
+  }
+  /* map / flatMap 視覺化 */
+  .flow-vis { font-family: "Consolas", monospace; font-size: .86rem; }
+  .box-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+  .vbox {
+    border: 1px solid #cfc6e8; background: #f3effb; border-radius: 6px;
+    padding: 5px 10px; color: #4a3d73;
+  }
+  .vbox.flat { background: #e6f4ec; border-color: #bfe3cd; color: #1f6b3a; }
+  .vbox.nest { background: #fcefe2; border-color: #f0c79b; color: #b85f17; }
+  .varrow { color: var(--accent); font-weight: 600; }
+  .badge {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    font-size: .72rem;
+    padding: 2px 9px;
+    border-radius: 10px;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) {
+    .two-col { grid-template-columns: 1fr; }
+    .toc ol { columns: 1; }
+    section { padding: 22px 18px; }
+  }
+  .col-box {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    background: #fff;
+  }
+  .col-box h4 { margin-top: 0; }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 30px;
+    font-size: .88rem;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Java Lambda 與 Stream API 詳細教學</h1>
+  <p>從函式介面到串流管線，搭配大量流程圖，徹底搞懂宣告式資料處理</p>
+  <div class="sub">涵蓋 Lambda / 函式介面 / 方法參考 / Stream 管線 / 惰性求值 / Collectors / reduce / 平行流</div>
+</header>
+
+<main>
+
+  <!-- 目錄 -->
+  <section class="toc">
+    <h2>目錄</h2>
+    <ol>
+      <li><a href="#why">1. 為什麼需要 Lambda 與 Stream</a></li>
+      <li><a href="#fi">2. 函式介面（Functional Interface）</a></li>
+      <li><a href="#syntax">3. Lambda 語法</a></li>
+      <li><a href="#builtin">4. 常用內建函式介面</a></li>
+      <li><a href="#methodref">5. 方法參考（Method Reference）</a></li>
+      <li><a href="#stream">6. Stream 是什麼？管線概念</a></li>
+      <li><a href="#create">7. 建立 Stream 的方式</a></li>
+      <li><a href="#intermediate">8. 中間操作</a></li>
+      <li><a href="#terminal">9. 終端操作</a></li>
+      <li><a href="#lazy">10. 惰性求值與執行流程</a></li>
+      <li><a href="#collectors">11. Collectors 收集器</a></li>
+      <li><a href="#reduce">12. reduce 歸約</a></li>
+      <li><a href="#parallel">13. 平行流（parallelStream）</a></li>
+      <li><a href="#pitfall">14. 常見陷阱與最佳實踐</a></li>
+    </ol>
+  </section>
+
+  <!-- 1. why -->
+  <section id="why">
+    <h2>1. 為什麼需要 Lambda 與 Stream</h2>
+    <p>
+      Java 8 引入 Lambda 與 Stream，最大的改變是讓我們從<strong>命令式（怎麼做）</strong>寫法，
+      轉向<strong class="k">宣告式（要什麼）</strong>寫法。看一個例子——找出清單中所有偶數、平方後排序：
+    </p>
+    <div class="two-col">
+      <div class="col-box">
+        <h4>傳統命令式：一步步指揮</h4>
+<pre style="margin:0"><span class="key">List</span>&lt;Integer&gt; result = <span class="key">new</span> ArrayList&lt;&gt;();
+<span class="key">for</span> (Integer n : nums) {
+    <span class="key">if</span> (n % <span class="num">2</span> == <span class="num">0</span>) {
+        result.add(n * n);
+    }
+}
+Collections.sort(result);</pre>
+      </div>
+      <div class="col-box">
+        <h4>Stream 宣告式：描述意圖</h4>
+<pre style="margin:0"><span class="key">List</span>&lt;Integer&gt; result = nums.stream()
+    .filter(n -&gt; n % <span class="num">2</span> == <span class="num">0</span>)
+    .map(n -&gt; n * n)
+    .sorted()
+    .toList();</pre>
+      </div>
+    </div>
+    <p>宣告式寫法的好處：</p>
+    <ul>
+      <li><strong>可讀性高</strong>：一眼看出「過濾→轉換→排序」的意圖，不必追蹤迴圈與暫存變數。</li>
+      <li><strong>少出錯</strong>：沒有手動管理索引、暫存集合的機會。</li>
+      <li><strong>易平行化</strong>：把 <code>stream()</code> 換成 <code>parallelStream()</code> 就能多核處理（第 13 節）。</li>
+    </ul>
+    <div class="note">
+      <strong>兩者的橋樑：</strong>Stream 的每個操作（如 <code>filter</code>、<code>map</code>）都接收一個<strong>函式</strong>當參數，
+      而 <strong>Lambda</strong> 正是用來簡潔地寫出這些函式。所以要先懂 Lambda，才能玩轉 Stream。
+    </div>
+  </section>
+
+  <!-- 2. Functional Interface -->
+  <section id="fi">
+    <h2>2. 函式介面（Functional Interface）</h2>
+    <p>
+      Lambda 的本質，是<strong class="k">函式介面的一個實例</strong>。所謂函式介面，就是
+      <strong>只有「一個」抽象方法的介面</strong>（可以再加 default / static 方法）。
+      可用 <code>@FunctionalInterface</code> 標註，編譯器會幫你檢查是否符合。
+    </p>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart LR
+  FI["函式介面<br/>只有一個抽象方法<br/>int operate(int a, int b)"] -->|"用 Lambda 提供實作"| L["(a, b) -> a + b"]
+  L -->|"賦值給介面型別"| V["Calculator add = ..."]
+  style FI fill:#f0ebfb,stroke:#6d4ad6
+  style L fill:#e6f4ec,stroke:#1f9d57
+      </div>
+      <div class="diagram-cap">圖 2-1　Lambda 就是「那個唯一抽象方法」的實作；編譯器靠介面推斷它的型別</div>
+    </div>
+<pre><span class="cmt">// @FunctionalInterface 不是必需，但建議加，編譯器會檢查</span>
+<span class="key">@FunctionalInterface</span>
+<span class="key">interface</span> <span class="fn">Calculator</span> {
+    <span class="key">int</span> operate(<span class="key">int</span> a, <span class="key">int</span> b);   <span class="cmt">// 唯一的抽象方法</span>
+}
+
+<span class="cmt">// 用 Lambda 提供不同實作</span>
+Calculator add = (a, b) -&gt; a + b;
+Calculator mul = (a, b) -&gt; a * b;
+
+System.out.println(add.operate(<span class="num">3</span>, <span class="num">4</span>));   <span class="cmt">// 7</span>
+System.out.println(mul.operate(<span class="num">3</span>, <span class="num">4</span>));   <span class="cmt">// 12</span></pre>
+    <div class="tip">
+      你早就用過函式介面了！<code>Runnable</code>（<code>run</code>）、<code>Comparator</code>（<code>compare</code>）、
+      <code>Callable</code>（<code>call</code>）都是只有一個抽象方法的函式介面，因此都能用 Lambda 來寫。
+    </div>
+  </section>
+
+  <!-- 3. Lambda 語法 -->
+  <section id="syntax">
+    <h2>3. Lambda 語法</h2>
+    <p>Lambda 的基本結構是 <code>(參數列) -&gt; 主體</code>。從匿名內部類別演進過來，能省的都省掉：</p>
+<pre><span class="cmt">// 舊寫法：匿名內部類別，樣板程式碼一大堆</span>
+Runnable r1 = <span class="key">new</span> Runnable() {
+    <span class="key">@Override</span>
+    <span class="key">public</span> <span class="key">void</span> run() {
+        System.out.println(<span class="str">"Hello"</span>);
+    }
+};
+
+<span class="cmt">// Lambda：同樣的事，一行搞定</span>
+Runnable r2 = () -&gt; System.out.println(<span class="str">"Hello"</span>);</pre>
+
+    <h3>各種語法形式</h3>
+<pre>() -&gt; <span class="num">42</span>                       <span class="cmt">// 無參數，回傳 42</span>
+x -&gt; x * x                     <span class="cmt">// 單一參數可省略括號</span>
+(x, y) -&gt; x + y                <span class="cmt">// 多參數</span>
+(<span class="key">int</span> x, <span class="key">int</span> y) -&gt; x + y        <span class="cmt">// 顯式宣告參數型別</span>
+(x, y) -&gt; {                    <span class="cmt">// 區塊主體：有大括號就要自己 return</span>
+    <span class="key">int</span> sum = x + y;
+    <span class="key">return</span> sum;
+}</pre>
+    <table>
+      <tr><th>情況</th><th>寫法</th></tr>
+      <tr><td>沒有參數</td><td>一定要有空括號 <code>() -&gt; ...</code></td></tr>
+      <tr><td>單一參數</td><td>可省略括號：<code>x -&gt; ...</code></td></tr>
+      <tr><td>單行主體</td><td>不用 <code>{}</code> 與 <code>return</code>，運算式結果即回傳值</td></tr>
+      <tr><td>多行主體</td><td>用 <code>{}</code> 包住，需要回傳時自己寫 <code>return</code></td></tr>
+    </table>
+    <div class="warn">
+      <strong>變數捕獲規則：</strong>Lambda 能存取外部區域變數，但該變數必須是
+      <strong>effectively final</strong>（實質不可變——賦值後不再更動）。這是因為 Lambda 可能在別的時間／執行緒執行，捕獲的是值而非可變參照。
+    </div>
+  </section>
+
+  <!-- 4. 內建函式介面 -->
+  <section id="builtin">
+    <h2>4. 常用內建函式介面</h2>
+    <p><code>java.util.function</code> 套件提供了一組常用的函式介面，<strong>不必每次自己定義</strong>。記住四個核心：</p>
+    <table>
+      <tr><th>介面</th><th>方法</th><th>簽章</th><th>用途</th></tr>
+      <tr><td><code>Function&lt;T,R&gt;</code></td><td><code>apply</code></td><td>T → R</td><td>把輸入轉換成另一種輸出</td></tr>
+      <tr><td><code>Predicate&lt;T&gt;</code></td><td><code>test</code></td><td>T → boolean</td><td>條件判斷（過濾用）</td></tr>
+      <tr><td><code>Consumer&lt;T&gt;</code></td><td><code>accept</code></td><td>T → void</td><td>消費一個值，無回傳（如印出）</td></tr>
+      <tr><td><code>Supplier&lt;T&gt;</code></td><td><code>get</code></td><td>() → T</td><td>不需輸入，提供一個值</td></tr>
+      <tr><td><code>BiFunction&lt;T,U,R&gt;</code></td><td><code>apply</code></td><td>(T,U) → R</td><td>兩個輸入轉一個輸出</td></tr>
+      <tr><td><code>UnaryOperator&lt;T&gt;</code></td><td><code>apply</code></td><td>T → T</td><td>輸入輸出同型別</td></tr>
+      <tr><td><code>BinaryOperator&lt;T&gt;</code></td><td><code>apply</code></td><td>(T,T) → T</td><td>兩個同型別合併成一個</td></tr>
+    </table>
+<pre><span class="key">import</span> java.util.function.*;
+
+Function&lt;Integer, Integer&gt; square  = x -&gt; x * x;            <span class="cmt">// T -> R</span>
+Predicate&lt;Integer&gt;        isEven  = n -&gt; n % <span class="num">2</span> == <span class="num">0</span>;       <span class="cmt">// T -> boolean</span>
+Consumer&lt;String&gt;          printer = s -&gt; System.out.println(s); <span class="cmt">// T -> void</span>
+Supplier&lt;Double&gt;          rnd     = () -&gt; Math.random();       <span class="cmt">// () -> T</span>
+BiFunction&lt;Integer, Integer, Integer&gt; add = (a, b) -&gt; a + b;
+
+System.out.println(square.apply(<span class="num">5</span>));   <span class="cmt">// 25</span>
+System.out.println(isEven.test(<span class="num">4</span>));    <span class="cmt">// true</span>
+printer.accept(<span class="str">"hi"</span>);                  <span class="cmt">// hi</span>
+System.out.println(add.apply(<span class="num">2</span>, <span class="num">3</span>));   <span class="cmt">// 5</span></pre>
+    <div class="tip">
+      <strong>避免裝箱開銷：</strong>處理基本型別時，優先用特化版本如 <code>IntPredicate</code>、<code>ToIntFunction</code>、<code>IntUnaryOperator</code>，
+      免去 <code>int</code> 與 <code>Integer</code> 之間反覆裝箱／拆箱。
+    </div>
+  </section>
+
+  <!-- 5. 方法參考 -->
+  <section id="methodref">
+    <h2>5. 方法參考（Method Reference）</h2>
+    <p>
+      當 Lambda 只是「呼叫一個既有方法」時，可用 <code>::</code> 進一步簡化成<strong>方法參考</strong>，更精簡也更易讀。
+      例如 <code>s -&gt; s.toUpperCase()</code> 可寫成 <code>String::toUpperCase</code>。
+    </p>
+    <table>
+      <tr><th>種類</th><th>Lambda 寫法</th><th>方法參考</th></tr>
+      <tr><td>靜態方法</td><td><code>s -&gt; Integer.parseInt(s)</code></td><td><code>Integer::parseInt</code></td></tr>
+      <tr><td>特定物件的實例方法</td><td><code>x -&gt; System.out.println(x)</code></td><td><code>System.out::println</code></td></tr>
+      <tr><td>特定型別的任意物件方法</td><td><code>s -&gt; s.toUpperCase()</code></td><td><code>String::toUpperCase</code></td></tr>
+      <tr><td>建構子</td><td><code>() -&gt; new ArrayList&lt;&gt;()</code></td><td><code>ArrayList::new</code></td></tr>
+    </table>
+<pre>Function&lt;String, Integer&gt; parse = Integer::parseInt;      <span class="cmt">// 靜態方法</span>
+Consumer&lt;String&gt;          print = System.out::println;     <span class="cmt">// 特定物件實例方法</span>
+Function&lt;String, String&gt;  upper = String::toUpperCase;     <span class="cmt">// 任意物件實例方法</span>
+Supplier&lt;List&lt;String&gt;&gt;     maker = ArrayList::new;           <span class="cmt">// 建構子</span>
+
+<span class="cmt">// 搭配 Stream 特別好讀</span>
+names.stream().map(String::toUpperCase).forEach(System.out::println);</pre>
+  </section>
+
+  <!-- 6. Stream 是什麼 -->
+  <section id="stream">
+    <h2>6. Stream 是什麼？管線概念</h2>
+    <p>
+      <strong>Stream（串流）不是資料結構</strong>，它不儲存資料；它是對某個資料來源的一串<strong class="k">運算管線（pipeline）</strong>描述。
+      一條 Stream 管線固定由三部分組成：
+    </p>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart LR
+  SRC["資料來源<br/>List / 陣列 / ..."] -->|"stream()"| F["filter<br/>中間操作"]
+  F --> M["map<br/>中間操作"]
+  M --> SO["sorted<br/>中間操作"]
+  SO --> C["collect<br/>終端操作"]
+  C --> R["結果<br/>List / 值 / ..."]
+  style F fill:#f0ebfb,stroke:#6d4ad6
+  style M fill:#f0ebfb,stroke:#6d4ad6
+  style SO fill:#f0ebfb,stroke:#6d4ad6
+  style C fill:#e6f4ec,stroke:#1f9d57,color:#0f6b3a
+  style R fill:#fcefe2,stroke:#e07b2b,color:#b85f17
+      </div>
+      <div class="diagram-cap">圖 6-1　Stream 管線：來源 → 0~n 個中間操作（紫）→ 剛好 1 個終端操作（綠）→ 結果</div>
+    </div>
+    <ol>
+      <li><strong>來源（Source）</strong>：集合、陣列、I/O、產生器等。</li>
+      <li><strong>中間操作（Intermediate）</strong>：如 <code>filter</code>、<code>map</code>。<strong>回傳新的 Stream</strong>，可串接、<strong>惰性</strong>（先不執行）。</li>
+      <li><strong>終端操作（Terminal）</strong>：如 <code>collect</code>、<code>forEach</code>。回傳非 Stream 的結果，<strong>觸發整條管線真正執行</strong>。</li>
+    </ol>
+    <p>Stream 的幾個重要性質：</p>
+    <ul>
+      <li><strong>不修改來源</strong>：原本的 List 不會被動到，產生的是新結果。</li>
+      <li><strong>只能消費一次</strong>：一條 Stream 被終端操作用過就「關閉」了，再用會丟 <code>IllegalStateException</code>。</li>
+      <li><strong>可以無限</strong>：搭配 <code>limit</code> 處理無限資料流。</li>
+    </ul>
+  </section>
+
+  <!-- 7. 建立 Stream -->
+  <section id="create">
+    <h2>7. 建立 Stream 的方式</h2>
+<pre><span class="cmt">// 1) 從集合（最常見）</span>
+List&lt;String&gt; list = List.of(<span class="str">"a"</span>, <span class="str">"b"</span>, <span class="str">"c"</span>);
+Stream&lt;String&gt; s1 = list.stream();
+
+<span class="cmt">// 2) 直接給定值</span>
+Stream&lt;Integer&gt; s2 = Stream.of(<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>);
+
+<span class="cmt">// 3) 從陣列</span>
+<span class="key">int</span>[] arr = {<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>};
+IntStream s3 = Arrays.stream(arr);
+
+<span class="cmt">// 4) 數字範圍（基本型別流，無裝箱）</span>
+IntStream s4 = IntStream.range(<span class="num">0</span>, <span class="num">5</span>);        <span class="cmt">// 0,1,2,3,4（不含 5）</span>
+IntStream s5 = IntStream.rangeClosed(<span class="num">1</span>, <span class="num">5</span>);  <span class="cmt">// 1,2,3,4,5（含 5）</span>
+
+<span class="cmt">// 5) 無限流 + limit（一定要有 limit 收斂）</span>
+Stream&lt;Integer&gt; s6 = Stream.iterate(<span class="num">1</span>, n -&gt; n * <span class="num">2</span>).limit(<span class="num">10</span>); <span class="cmt">// 1,2,4,8,...</span>
+Stream&lt;Double&gt;  s7 = Stream.generate(Math::random).limit(<span class="num">3</span>);</pre>
+    <div class="note">
+      <strong>基本型別流</strong>（<code>IntStream</code>、<code>LongStream</code>、<code>DoubleStream</code>）提供 <code>sum()</code>、<code>average()</code>、<code>max()</code> 等方便方法，
+      並避免裝箱。物件流可用 <code>mapToInt(...)</code> 轉成它們。
+    </div>
+  </section>
+
+  <!-- 8. 中間操作 -->
+  <section id="intermediate">
+    <h2>8. 中間操作</h2>
+    <p>中間操作都<strong>回傳新的 Stream</strong>，所以能一個接一個串起來，且在終端操作前不會真正執行。</p>
+    <table>
+      <tr><th>操作</th><th>作用</th></tr>
+      <tr><td><code>filter(Predicate)</code></td><td>保留符合條件的元素</td></tr>
+      <tr><td><code>map(Function)</code></td><td>把每個元素轉換成另一個（一對一）</td></tr>
+      <tr><td><code>flatMap(Function)</code></td><td>把每個元素展開成一個流，再攤平合併（一對多）</td></tr>
+      <tr><td><code>distinct()</code></td><td>去除重複（依 <code>equals</code>）</td></tr>
+      <tr><td><code>sorted()</code> / <code>sorted(Comparator)</code></td><td>排序</td></tr>
+      <tr><td><code>limit(n)</code> / <code>skip(n)</code></td><td>取前 n 個 / 跳過前 n 個</td></tr>
+      <tr><td><code>peek(Consumer)</code></td><td>窺視每個元素（主要用於除錯，勿放業務邏輯）</td></tr>
+    </table>
+<pre>List&lt;String&gt; result = Stream.of(<span class="str">"apple"</span>, <span class="str">"banana"</span>, <span class="str">"cherry"</span>, <span class="str">"avocado"</span>)
+    .filter(s -&gt; s.startsWith(<span class="str">"a"</span>))   <span class="cmt">// 留下 a 開頭：apple, avocado</span>
+    .map(String::toUpperCase)          <span class="cmt">// 轉大寫：APPLE, AVOCADO</span>
+    .sorted()                          <span class="cmt">// 排序</span>
+    .toList();                         <span class="cmt">// [APPLE, AVOCADO]</span></pre>
+
+    <h3>map vs flatMap：最容易混淆的一組</h3>
+    <p><code>map</code> 是一對一轉換；<code>flatMap</code> 則把「巢狀結構」攤平成單層。</p>
+    <div class="diagram">
+      <div class="flow-vis">
+        <div class="box-row">
+          <span style="min-width:78px;color:#6a6580">map：</span>
+          <span class="vbox">"a,b"</span><span class="vbox">"c,d"</span>
+          <span class="varrow">— map(split) →</span>
+          <span class="vbox nest">["a","b"]</span><span class="vbox nest">["c","d"]</span>
+          <span style="color:#b85f17">仍是巢狀 Stream&lt;String[]&gt;</span>
+        </div>
+        <div class="box-row">
+          <span style="min-width:78px;color:#6a6580">flatMap：</span>
+          <span class="vbox">"a,b"</span><span class="vbox">"c,d"</span>
+          <span class="varrow">— flatMap →</span>
+          <span class="vbox flat">"a"</span><span class="vbox flat">"b"</span><span class="vbox flat">"c"</span><span class="vbox flat">"d"</span>
+          <span style="color:#1f6b3a">攤平成 Stream&lt;String&gt;</span>
+        </div>
+      </div>
+      <div class="diagram-cap">圖 8-1　map 保留巢狀層次；flatMap 把每個子流「拆開倒進」同一條流</div>
+    </div>
+<pre>List&lt;List&lt;Integer&gt;&gt; nested = List.of(
+        List.of(<span class="num">1</span>, <span class="num">2</span>), List.of(<span class="num">3</span>, <span class="num">4</span>), List.of(<span class="num">5</span>));
+
+List&lt;Integer&gt; flat = nested.stream()
+    .flatMap(List::stream)   <span class="cmt">// 把每個子 List 變成元素流再攤平</span>
+    .toList();               <span class="cmt">// [1, 2, 3, 4, 5]</span></pre>
+  </section>
+
+  <!-- 9. 終端操作 -->
+  <section id="terminal">
+    <h2>9. 終端操作</h2>
+    <p>
+      終端操作<strong>觸發整條管線執行</strong>並產生最終結果（值、集合或副作用）。一條 Stream<strong>只能有一個</strong>終端操作。
+      如何分辨中間／終端？看回傳值：
+    </p>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart TB
+  OP["某個 Stream 操作"] --> Q{"它的回傳值是？"}
+  Q -->|"回傳 Stream"| INT["中間操作<br/>惰性，可繼續串接"]
+  Q -->|"回傳值 / 集合 / Optional / void"| TER["終端操作<br/>觸發執行，管線結束"]
+  style INT fill:#f0ebfb,stroke:#6d4ad6
+  style TER fill:#e6f4ec,stroke:#1f9d57,color:#0f6b3a
+      </div>
+      <div class="diagram-cap">圖 9-1　判斷訣竅：回傳 Stream 的是中間操作，否則是終端操作</div>
+    </div>
+    <table>
+      <tr><th>操作</th><th>作用</th><th>回傳</th></tr>
+      <tr><td><code>forEach(Consumer)</code></td><td>對每個元素執行動作</td><td>void</td></tr>
+      <tr><td><code>collect(Collector)</code></td><td>收集成 List/Set/Map 等</td><td>集合</td></tr>
+      <tr><td><code>toList()</code> <span class="muted">(Java 16+)</span></td><td>收集成不可變 List</td><td>List</td></tr>
+      <tr><td><code>reduce(...)</code></td><td>歸約成單一值</td><td>值 / Optional</td></tr>
+      <tr><td><code>count()</code></td><td>元素個數</td><td>long</td></tr>
+      <tr><td><code>min/max(Comparator)</code></td><td>最小 / 最大</td><td>Optional</td></tr>
+      <tr><td><code>anyMatch/allMatch/noneMatch</code></td><td>是否符合條件（<strong>短路</strong>）</td><td>boolean</td></tr>
+      <tr><td><code>findFirst/findAny</code></td><td>取一個元素（<strong>短路</strong>）</td><td>Optional</td></tr>
+    </table>
+<pre>List&lt;Integer&gt; nums = List.of(<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>, <span class="num">4</span>, <span class="num">5</span>, <span class="num">6</span>);
+
+<span class="key">long</span> cnt   = nums.stream().filter(n -&gt; n &gt; <span class="num">3</span>).count();          <span class="cmt">// 3</span>
+<span class="key">int</span>  sum   = nums.stream().mapToInt(Integer::intValue).sum();   <span class="cmt">// 21</span>
+<span class="key">boolean</span> any = nums.stream().anyMatch(n -&gt; n &gt; <span class="num">5</span>);             <span class="cmt">// true</span>
+Optional&lt;Integer&gt; first = nums.stream()
+        .filter(n -&gt; n % <span class="num">2</span> == <span class="num">0</span>).findFirst();                   <span class="cmt">// Optional[2]</span></pre>
+  </section>
+
+  <!-- 10. 惰性求值 -->
+  <section id="lazy">
+    <h2>10. 惰性求值與執行流程</h2>
+    <p>
+      這是 Stream 最關鍵、也最反直覺的機制。許多人以為管線是「先 filter 完<strong>全部</strong>，再 map 完全部」——
+      <strong>錯！</strong>實際上每個元素是<strong class="k">一個一個「縱向」走完整條管線</strong>，而且終端操作不呼叫前，中間操作根本不動。
+    </p>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart TB
+  S["取下一個元素"] --> F{"filter 條件成立？"}
+  F -->|"否，丟棄"| S
+  F -->|"是"| M["map 轉換此元素"]
+  M --> T["終端操作處理此元素"]
+  T --> C{"還有元素，且未短路？"}
+  C -->|"是"| S
+  C -->|"否"| E["管線結束"]
+  style F fill:#f0ebfb,stroke:#6d4ad6
+  style M fill:#f0ebfb,stroke:#6d4ad6
+  style T fill:#e6f4ec,stroke:#1f9d57,color:#0f6b3a
+      </div>
+      <div class="diagram-cap">圖 10-1　元素逐個「縱向」穿過整條管線；短路操作可讓它提早結束</div>
+    </div>
+    <p>用 <code>peek</code> 觀察實際執行順序，眼見為憑：</p>
+<pre>Optional&lt;String&gt; result = Stream.of(<span class="str">"a"</span>, <span class="str">"bb"</span>, <span class="str">"ccc"</span>, <span class="str">"dddd"</span>)
+    .peek(s -&gt; System.out.println(<span class="str">"filter 檢查: "</span> + s))
+    .filter(s -&gt; s.length() &gt; <span class="num">1</span>)
+    .peek(s -&gt; System.out.println(<span class="str">"  map  處理: "</span> + s))
+    .map(String::toUpperCase)
+    .findFirst();   <span class="cmt">// 短路：找到第一個就停</span>
+
+<span class="cmt">/* 實際輸出：
+   filter 檢查: a          ← a 不通過
+   filter 檢查: bb         ← bb 通過
+     map  處理: bb         ← 立刻往下走，不等其他元素
+   （ccc、dddd 完全沒被碰到——findFirst 已短路結束！）
+*/</span></pre>
+    <div class="tip">
+      <strong>惰性帶來的兩大好處：</strong>① <strong>短路</strong>——像 <code>findFirst</code>、<code>limit</code>、<code>anyMatch</code> 找到答案就停，不處理多餘元素；
+      ② <strong>可處理無限流</strong>——只要有 <code>limit</code> 收斂，<code>Stream.iterate(...)</code> 這種無限來源也能用。
+    </div>
+  </section>
+
+  <!-- 11. Collectors -->
+  <section id="collectors">
+    <h2>11. Collectors 收集器</h2>
+    <p><code>collect()</code> 搭配 <code>Collectors</code> 工具，能把流「收集」成各種形式——這是 Stream 最強大的終端操作。</p>
+    <table>
+      <tr><th>Collector</th><th>作用</th></tr>
+      <tr><td><code>toList()</code> / <code>toSet()</code></td><td>收集成 List / Set</td></tr>
+      <tr><td><code>toMap(k, v)</code></td><td>收集成 Map</td></tr>
+      <tr><td><code>joining(分隔, 前綴, 後綴)</code></td><td>字串串接</td></tr>
+      <tr><td><code>groupingBy(分類函式)</code></td><td>依鍵分組成 Map&lt;K, List&lt;T&gt;&gt;</td></tr>
+      <tr><td><code>partitioningBy(條件)</code></td><td>依 true/false 分成兩組</td></tr>
+      <tr><td><code>counting()</code> / <code>summingInt()</code> / <code>averagingInt()</code></td><td>計數 / 加總 / 平均（常作 groupingBy 的下游）</td></tr>
+    </table>
+<pre><span class="key">record</span> <span class="fn">Person</span>(String name, String city, <span class="key">int</span> age) {}
+
+List&lt;Person&gt; people = List.of(
+    <span class="key">new</span> Person(<span class="str">"Alice"</span>, <span class="str">"Taipei"</span>, <span class="num">30</span>),
+    <span class="key">new</span> Person(<span class="str">"Bob"</span>,   <span class="str">"Taipei"</span>, <span class="num">25</span>),
+    <span class="key">new</span> Person(<span class="str">"Carol"</span>, <span class="str">"Tokyo"</span>,  <span class="num">35</span>));
+
+<span class="cmt">// 依城市分組</span>
+Map&lt;String, List&lt;Person&gt;&gt; byCity = people.stream()
+    .collect(Collectors.groupingBy(Person::city));
+
+<span class="cmt">// 各城市人數：groupingBy + 下游 counting</span>
+Map&lt;String, Long&gt; countByCity = people.stream()
+    .collect(Collectors.groupingBy(Person::city, Collectors.counting()));
+<span class="cmt">// {Taipei=2, Tokyo=1}</span>
+
+<span class="cmt">// 名字串接</span>
+String names = people.stream().map(Person::name)
+    .collect(Collectors.joining(<span class="str">", "</span>, <span class="str">"["</span>, <span class="str">"]"</span>));   <span class="cmt">// [Alice, Bob, Carol]</span></pre>
+    <div class="diagram">
+      <div class="flow-vis">
+        <div class="box-row">
+          <span class="vbox">Alice/Taipei</span><span class="vbox">Bob/Taipei</span><span class="vbox">Carol/Tokyo</span>
+          <span class="varrow">— groupingBy(city) →</span>
+        </div>
+        <div class="box-row" style="padding-left:20px">
+          <span class="vbox flat">Taipei → [Alice, Bob]</span>
+          <span class="vbox nest">Tokyo → [Carol]</span>
+        </div>
+      </div>
+      <div class="diagram-cap">圖 11-1　groupingBy 把流依分類鍵歸成一個 Map</div>
+    </div>
+  </section>
+
+  <!-- 12. reduce -->
+  <section id="reduce">
+    <h2>12. reduce 歸約</h2>
+    <p>
+      <code>reduce</code> 把整條流<strong>摺疊（fold）成單一個值</strong>：給一個初始值與一個「合併兩個元素」的函式，
+      它就從頭到尾逐步累積。加總、相乘、求最大值都是它的特例。
+    </p>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart LR
+  I["初始值 0"] --> A1["0 + 1 = 1"]
+  A1 --> A2["1 + 2 = 3"]
+  A2 --> A3["3 + 3 = 6"]
+  A3 --> A4["6 + 4 = 10"]
+  A4 --> R["結果 10"]
+  style I fill:#fcefe2,stroke:#e07b2b,color:#b85f17
+  style R fill:#e6f4ec,stroke:#1f9d57,color:#0f6b3a
+      </div>
+      <div class="diagram-cap">圖 12-1　reduce(0, (a,b)-&gt;a+b) 對 [1,2,3,4] 的累積過程</div>
+    </div>
+<pre>List&lt;Integer&gt; nums = List.of(<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>, <span class="num">4</span>);
+
+<span class="cmt">// 有初始值：保證有回傳值</span>
+<span class="key">int</span> sum     = nums.stream().reduce(<span class="num">0</span>, (a, b) -&gt; a + b);   <span class="cmt">// 10</span>
+<span class="key">int</span> product = nums.stream().reduce(<span class="num">1</span>, (a, b) -&gt; a * b);   <span class="cmt">// 24</span>
+
+<span class="cmt">// 無初始值：流可能為空，故回傳 Optional</span>
+Optional&lt;Integer&gt; max = nums.stream().reduce(Integer::max);  <span class="cmt">// Optional[4]</span></pre>
+    <div class="note">
+      <strong>初始值（identity）的意義：</strong>它必須是該運算的「單位元」——加法用 <code>0</code>、乘法用 <code>1</code>、字串串接用 <code>""</code>。
+      這樣即使流是空的，也能安全回傳這個初始值。
+    </div>
+  </section>
+
+  <!-- 13. 平行流 -->
+  <section id="parallel">
+    <h2>13. 平行流（parallelStream）</h2>
+    <p>
+      把 <code>stream()</code> 換成 <code>parallelStream()</code>（或對流呼叫 <code>.parallel()</code>），Stream 就會用
+      <strong>分而治之</strong>的方式，把資料切塊丟到多個執行緒（預設用 <code>ForkJoinPool.commonPool()</code>）平行處理，最後合併。
+    </p>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart TB
+  SRC["資料來源"] --> SP["切分成多塊 (split)"]
+  SP --> W1["執行緒 1 處理"]
+  SP --> W2["執行緒 2 處理"]
+  SP --> W3["執行緒 3 處理"]
+  W1 --> MG["合併 (combine)"]
+  W2 --> MG
+  W3 --> MG
+  MG --> R["最終結果"]
+  style SP fill:#f0ebfb,stroke:#6d4ad6
+  style MG fill:#e6f4ec,stroke:#1f9d57,color:#0f6b3a
+      </div>
+      <div class="diagram-cap">圖 13-1　平行流：切分 → 各執行緒獨立處理 → 合併結果</div>
+    </div>
+<pre><span class="key">long</span> count = IntStream.rangeClosed(<span class="num">1</span>, <span class="num">1_000_000</span>)
+    .parallel()
+    .filter(n -&gt; n % <span class="num">2</span> == <span class="num">0</span>)
+    .count();
+
+<span class="cmt">// 或直接從集合：</span>
+list.parallelStream().map(...).collect(...);</pre>
+    <div class="warn">
+      <strong>平行流不是免費的午餐</strong>，用錯反而更慢或出錯。安全使用的前提：
+      <ul style="margin:6px 0 0">
+        <li>資料量<strong>夠大</strong>且運算<strong>夠重</strong>（CPU 密集），否則切分與合併的開銷划不來。</li>
+        <li>操作<strong>無狀態、無共享可變狀態、無副作用</strong>——別在 Lambda 裡改外部變數或集合。</li>
+        <li>用 <code>reduce</code> / <code>collect</code> 累積，<strong>不要</strong>用 <code>forEach</code> 往共享集合塞東西。</li>
+        <li>順序敏感的需求要小心：平行下 <code>forEach</code> 不保證順序（需要時用 <code>forEachOrdered</code>）。</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 14. 陷阱與最佳實踐 -->
+  <section id="pitfall">
+    <h2>14. 常見陷阱與最佳實踐</h2>
+
+    <h3>陷阱：Stream 不能重複使用</h3>
+<pre>Stream&lt;Integer&gt; s = Stream.of(<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>);
+s.forEach(System.out::println);
+<span class="key">long</span> c = s.count();   <span class="cmt">// ❌ IllegalStateException：stream 已被操作或關閉</span></pre>
+
+    <div class="two-col">
+      <div class="col-box">
+        <h4>✅ 最佳實踐</h4>
+        <ul>
+          <li>能用<strong>方法參考</strong>就用，更精簡易讀。</li>
+          <li>用 <strong>Collectors</strong> 收集，而非在 Lambda 裡手動累加。</li>
+          <li>基本型別用 <strong><code>IntStream</code></strong> 等特化流，避免裝箱。</li>
+          <li>Lambda 保持<strong>短小、無副作用</strong>（純函式）。</li>
+          <li>善用 <strong>短路</strong> 操作（<code>findFirst</code>、<code>anyMatch</code>、<code>limit</code>）。</li>
+          <li>平行流務必<strong>實測效能</strong>再決定採用。</li>
+        </ul>
+      </div>
+      <div class="col-box">
+        <h4>⚠️ 常見陷阱</h4>
+        <ul>
+          <li>把<strong>同一條 Stream</strong> 用第二次 → 例外。</li>
+          <li>在 Lambda 內<strong>修改外部可變狀態</strong>（平行下更危險）。</li>
+          <li>用 <code>peek</code> 放<strong>業務邏輯</strong>——惰性／短路下可能不執行。</li>
+          <li>簡單迴圈硬改成 Stream，反而<strong>更難讀</strong>。</li>
+          <li>對基本型別用包裝流，<strong>裝箱拖慢</strong>效能。</li>
+          <li>忽略 <code>Optional</code> 直接 <code>get()</code>，可能 <strong>NoSuchElementException</strong>。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tip">
+      <strong>一句話總結：</strong>Lambda 讓你把「行為」當參數傳遞，Stream 讓你用「來源 → 中間操作 → 終端操作」的管線
+      宣告式地處理資料。掌握<strong>惰性求值</strong>與<strong>中間／終端</strong>的區別，就掌握了 Stream 的精髓。
+      建議打開 IDE，把本文每段程式碼都<strong>親手跑一次</strong>，尤其是第 10 節的 <code>peek</code> 範例——親眼看到執行順序，觀念立刻通透。
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Java Lambda 與 Stream API 詳細教學 · 概念說明搭配 Mermaid 流程圖 · 僅供學習參考
+</footer>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#f0ebfb',
+      primaryBorderColor: '#6d4ad6',
+      primaryTextColor: '#221f2e',
+      lineColor: '#9a92b3',
+      secondaryColor: '#f0ebfb',
+      tertiaryColor: '#f7f6fb',
+      fontFamily: 'Segoe UI, Microsoft JhengHei, sans-serif',
+      fontSize: '14px'
+    },
+    flowchart: { curve: 'basis', useMaxWidth: true },
+    sequence: { useMaxWidth: true }
+  });
+</script>
+</body>
+</html>
