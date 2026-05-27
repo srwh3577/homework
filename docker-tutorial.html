@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Docker 詳細教學</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #f6f8fa;
+    --card: #ffffff;
+    --text: #1d2731;
+    --muted: #647280;
+    --accent: #2496ed;
+    --accent-dark: #1872bd;
+    --code-bg: #1e2530;
+    --code-text: #e6edf3;
+    --border: #e1e7ee;
+    --ok: #1f9d57;
+    --err: #d6453d;
+    --orange: #e07b2b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.75;
+  }
+  header {
+    background: linear-gradient(135deg, #053a5c, #066da5 50%, #2496ed);
+    color: #fff;
+    padding: 52px 24px;
+    text-align: center;
+  }
+  header h1 { margin: 0 0 10px; font-size: 2.3rem; letter-spacing: .5px; }
+  header p { margin: 0; opacity: .92; font-size: 1.05rem; }
+  header .sub { margin-top: 14px; font-size: .9rem; opacity: .78; }
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 20px 80px;
+  }
+  section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin: 22px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  h2 {
+    margin-top: 0;
+    font-size: 1.5rem;
+    border-left: 4px solid var(--accent);
+    padding-left: 12px;
+  }
+  h3 { font-size: 1.18rem; color: var(--accent-dark); margin-top: 30px; }
+  h4 { font-size: 1.02rem; color: var(--text); margin: 22px 0 6px; }
+  p { color: var(--text); }
+  ul, ol { padding-left: 24px; }
+  li { margin: 4px 0; }
+  .muted { color: var(--muted); font-size: .92rem; }
+  strong.k { color: var(--accent-dark); }
+  code.inline {
+    background: #e9f2fc;
+    color: #1565c0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: .9em;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 18px 20px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: .88rem;
+    line-height: 1.65;
+    margin: 14px 0;
+  }
+  pre .cmt { color: #7d8a99; font-style: italic; }
+  pre .key { color: #79c0ff; }
+  pre .str { color: #a5d6a3; }
+  pre .fn  { color: #ffd479; }
+  pre .num { color: #f0a868; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: .93rem;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: #e9f2fc; color: var(--accent-dark); }
+  td code, th code { color: #1565c0; font-family: "Consolas", monospace; }
+  .toc {
+    background: #e9f2fc;
+    border: 1px solid #cfe2f7;
+  }
+  .toc ol { margin: 8px 0 0; padding-left: 24px; columns: 2; }
+  .toc a { color: var(--accent-dark); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .tip {
+    border-left: 4px solid var(--ok);
+    background: #effaf3;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .warn {
+    border-left: 4px solid #e0a800;
+    background: #fff8e6;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .note {
+    border-left: 4px solid var(--accent);
+    background: #eaf3fc;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  /* 圖表容器 */
+  .diagram {
+    background: #fbfdff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 16px 10px;
+    margin: 20px 0;
+    text-align: center;
+    overflow-x: auto;
+  }
+  .diagram .mermaid { display: inline-block; min-width: 100%; }
+  .diagram-cap {
+    text-align: center;
+    color: var(--muted);
+    font-size: .85rem;
+    margin: 4px 0 6px;
+  }
+  /* 映像分層堆疊圖 */
+  .layerstack { max-width: 520px; margin: 18px auto; }
+  .layer {
+    border: 1px solid #cfd8e2;
+    border-bottom: none;
+    background: #eaf3fc;
+    padding: 11px 16px;
+    font-family: "Consolas", monospace;
+    font-size: .85rem;
+    color: #2a4258;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .layer:first-child { border-radius: 8px 8px 0 0; }
+  .layer:last-child  { border-radius: 0 0 8px 8px; border-bottom: 1px solid #cfd8e2; }
+  .layer .tag { font-size: .74rem; color: var(--muted); }
+  .layer.writable { background: #fcefe2; border-color: var(--orange); color: #b85f17; font-weight: 600; }
+  .layer.base { background: #e6f4ec; border-color: #bfe3cd; }
+  .stack-note { text-align: center; font-size: .82rem; color: var(--muted); margin-top: 6px; }
+  .badge {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    font-size: .72rem;
+    padding: 2px 9px;
+    border-radius: 10px;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) {
+    .two-col { grid-template-columns: 1fr; }
+    .toc ol { columns: 1; }
+    section { padding: 22px 18px; }
+  }
+  .col-box {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    background: #fff;
+  }
+  .col-box h4 { margin-top: 0; }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 30px;
+    font-size: .88rem;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Docker 詳細教學</h1>
+  <p>從容器原理到實戰部署，搭配大量流程圖，由淺入深掌握容器化</p>
+  <div class="sub">涵蓋 Image / Container / Dockerfile / 分層快取 / Volume / 網路 / Docker Compose / 實戰範例</div>
+</header>
+
+<main>
+
+  <!-- 目錄 -->
+  <section class="toc">
+    <h2>目錄</h2>
+    <ol>
+      <li><a href="#what">1. 什麼是 Docker？</a></li>
+      <li><a href="#why">2. 容器 vs 虛擬機</a></li>
+      <li><a href="#arch">3. Docker 架構與核心術語</a></li>
+      <li><a href="#image">4. Image 與 Container 的關係</a></li>
+      <li><a href="#run">5. docker run 背後發生什麼</a></li>
+      <li><a href="#lifecycle">6. Container 生命週期</a></li>
+      <li><a href="#dockerfile">7. Dockerfile 與映像分層</a></li>
+      <li><a href="#cache">8. Build 快取機制</a></li>
+      <li><a href="#cli">9. 常用 CLI 指令</a></li>
+      <li><a href="#volume">10. Volume 與資料持久化</a></li>
+      <li><a href="#network">11. 網路（Network）</a></li>
+      <li><a href="#compose">12. Docker Compose 多容器編排</a></li>
+      <li><a href="#practice">13. 實戰範例與最佳實踐</a></li>
+    </ol>
+  </section>
+
+  <!-- 1. 什麼是 Docker -->
+  <section id="what">
+    <h2>1. 什麼是 Docker？</h2>
+    <p>
+      <strong>Docker</strong> 是一個<strong class="k">容器化（Containerization）平台</strong>，把應用程式連同它執行所需的一切
+      ——程式碼、執行環境、函式庫、設定——<strong>打包成一個標準化的「容器」</strong>，讓它在任何裝了 Docker 的機器上都能用<strong>一模一樣</strong>的方式執行。
+    </p>
+    <p>它解決的經典痛點是那句工程師名言：</p>
+    <div class="warn">
+      「<strong>在我的電腦上明明可以跑啊！</strong>」——程式在開發機正常，部署到測試／正式環境卻壞掉，
+      因為兩邊的作業系統、套件版本、環境變數不一致。Docker 把「環境」也一起打包，從此<strong>環境一致、隨處可跑</strong>。
+    </div>
+    <p>使用 Docker 的好處：</p>
+    <ul>
+      <li><strong>環境一致</strong>：開發、測試、正式環境用同一個映像，消除「環境差異」問題。</li>
+      <li><strong>輕量快速</strong>：容器共享主機核心，啟動只要<strong>秒級</strong>，體積比虛擬機小得多。</li>
+      <li><strong>隔離性</strong>：每個容器有獨立的檔案系統、網路、行程空間，彼此不干擾。</li>
+      <li><strong>易於擴展與部署</strong>：映像可推到 Registry，任何機器拉下來就能跑，是微服務與 CI/CD 的基石。</li>
+    </ul>
+  </section>
+
+  <!-- 2. 容器 vs VM -->
+  <section id="why">
+    <h2>2. 容器 vs 虛擬機（VM）</h2>
+    <p>要理解 Docker 為何輕量，先看它和傳統虛擬機在架構上的差別。</p>
+
+    <h4>虛擬機：每台 VM 都背著一整套作業系統</h4>
+    <div class="diagram">
+      <div class="mermaid">
+graph TB
+  subgraph VMARCH["虛擬機架構"]
+    HW1["實體硬體"] --> HOST1["主機作業系統"]
+    HOST1 --> HV["Hypervisor"]
+    HV --> G1["Guest OS<br/>App A + 依賴"]
+    HV --> G2["Guest OS<br/>App B + 依賴"]
+    HV --> G3["Guest OS<br/>App C + 依賴"]
+  end
+      </div>
+      <div class="diagram-cap">圖 2-1　每個 VM 都含完整 Guest OS，肥大（GB 級）、啟動慢（分鐘級）</div>
+    </div>
+
+    <h4>容器：共享主機核心，只打包 App 與依賴</h4>
+    <div class="diagram">
+      <div class="mermaid">
+graph TB
+  subgraph CARCH["容器架構"]
+    HW2["實體硬體"] --> HOST2["主機作業系統（共享核心）"]
+    HOST2 --> DE["Docker Engine"]
+    DE --> C1["容器 A<br/>App A + 依賴"]
+    DE --> C2["容器 B<br/>App B + 依賴"]
+    DE --> C3["容器 C<br/>App C + 依賴"]
+  end
+      </div>
+      <div class="diagram-cap">圖 2-2　容器沒有 Guest OS，輕量（MB 級）、啟動快（秒級）</div>
+    </div>
+
+    <table>
+      <tr><th>比較項目</th><th>虛擬機（VM）</th><th>容器（Container）</th></tr>
+      <tr><td>隔離層級</td><td>硬體層（各自完整 OS）</td><td>行程層（共享主機核心）</td></tr>
+      <tr><td>體積</td><td>GB 級</td><td>MB 級</td></tr>
+      <tr><td>啟動速度</td><td>數十秒到分鐘</td><td>秒級甚至更快</td></tr>
+      <tr><td>資源開銷</td><td>大（每台跑一套 OS）</td><td>小</td></tr>
+      <tr><td>隔離強度</td><td>強（完全隔離）</td><td>較弱（共享核心）</td></tr>
+    </table>
+    <div class="note">
+      <strong>兩者不是互斥：</strong>實務上常見「在 VM 裡跑 Docker」。VM 提供強隔離與資源切分，容器在其中提供輕量、快速的應用封裝。
+    </div>
+  </section>
+
+  <!-- 3. 架構 -->
+  <section id="arch">
+    <h2>3. Docker 架構與核心術語</h2>
+    <p>Docker 採用 <strong>Client–Server（主從）</strong>架構。你在終端機敲的 <code>docker</code> 指令只是「客戶端」，真正幹活的是背景的 <strong>Docker Daemon</strong>。</p>
+    <div class="diagram">
+      <div class="mermaid">
+graph LR
+  CLI["Docker Client<br/>(docker 指令)"] -->|"REST API"| D["Docker Daemon<br/>(dockerd)"]
+  subgraph HOST["Docker 主機"]
+    D --> IMG["本地 Images<br/>(映像)"]
+    D --> CON["Containers<br/>(容器)"]
+  end
+  D -->|"pull / push"| REG["Registry<br/>(Docker Hub)"]
+      </div>
+      <div class="diagram-cap">圖 3-1　Client 透過 REST API 指揮 Daemon；Daemon 管理映像、容器，並與 Registry 交換映像</div>
+    </div>
+
+    <h3>核心術語對照表</h3>
+    <table>
+      <tr><th>術語</th><th>說明</th></tr>
+      <tr><td><strong>Docker Engine</strong></td><td>Docker 的核心，包含背景服務 <strong>Daemon（dockerd）</strong>、REST API、以及命令列 <strong>Client（docker）</strong>。</td></tr>
+      <tr><td><strong>Image（映像）</strong></td><td>一個<strong>唯讀的模板</strong>，包含執行應用所需的檔案系統與設定。由多個<strong>層（layer）</strong>疊成。例如 <code>nginx:1.25</code>。</td></tr>
+      <tr><td><strong>Container（容器）</strong></td><td>映像的<strong>執行實例</strong>。在映像之上加一個<strong>可寫層</strong>後跑起來，就是一個容器。同一映像可開出多個容器。</td></tr>
+      <tr><td><strong>Registry（倉庫）</strong></td><td>存放與分發映像的服務。<strong>Docker Hub</strong> 是預設的公開 Registry，企業也可自架私有 Registry。</td></tr>
+      <tr><td><strong>Repository / Tag</strong></td><td>映像的命名與版本，格式 <code>名稱:標籤</code>，如 <code>node:18-alpine</code>。不指定標籤預設為 <code>latest</code>。</td></tr>
+      <tr><td><strong>Dockerfile</strong></td><td>一份文字腳本，定義「如何一步步建出一個映像」。</td></tr>
+      <tr><td><strong>Volume（資料卷）</strong></td><td>Docker 管理的持久化儲存，讓資料在容器刪除後仍保留。</td></tr>
+    </table>
+  </section>
+
+  <!-- 4. Image vs Container -->
+  <section id="image">
+    <h2>4. Image 與 Container 的關係</h2>
+    <p>
+      這是最重要、也最常被搞混的觀念。一句話：<strong class="k">Image 是模板（class），Container 是實例（object）</strong>。
+      就像程式裡用一個類別 <code>new</code> 出多個物件，你也能用同一個映像跑出多個容器。
+    </p>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart LR
+  DF["Dockerfile"] -->|"docker build"| IMG["Image<br/>(唯讀模板)"]
+  REG["Docker Hub"] -->|"docker pull"| IMG
+  IMG -->|"docker run"| C1["Container 1"]
+  IMG -->|"docker run"| C2["Container 2"]
+  IMG -->|"docker run"| C3["Container 3"]
+      </div>
+      <div class="diagram-cap">圖 4-1　映像可由 Dockerfile 建出或從 Registry 拉取；一個映像能跑出多個彼此獨立的容器</div>
+    </div>
+    <ul>
+      <li><strong>Image 是唯讀的</strong>：一旦建好就不會改變，所以可重現、可分發。</li>
+      <li><strong>Container 在 Image 上加一個「可寫層」</strong>：容器執行時寫入的檔案都落在這層，<strong>刪除容器時這層也消失</strong>（所以要持久化資料得用 Volume，見第 10 節）。</li>
+      <li>多個容器<strong>共用底層唯讀映像層</strong>，各自只佔用自己那薄薄的可寫層，因此非常省空間。</li>
+    </ul>
+    <div class="tip">
+      <strong>類比：</strong>Image 像「光碟母片」或「程式安裝檔」，Container 像「裝好正在執行的程式」。母片不變，可以裝很多份。
+    </div>
+  </section>
+
+  <!-- 5. docker run -->
+  <section id="run">
+    <h2>5. docker run 背後發生什麼</h2>
+    <p>當你敲下 <code>docker run nginx</code>，Docker 在背後做了一連串事情：</p>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart TB
+  R["docker run nginx"] --> Q{"本地有 nginx 映像嗎？"}
+  Q -->|"有"| CR["建立 Container<br/>(在映像上疊一個可寫層)"]
+  Q -->|"沒有"| PL["從 Registry 拉取映像<br/>docker pull"]
+  PL --> CR
+  CR --> NET["配置網路與檔案系統<br/>(分配 IP、掛載)"]
+  NET --> EXEC["執行映像指定的<br/>CMD / ENTRYPOINT 程序"]
+  EXEC --> S["Container 進入 Running 狀態"]
+      </div>
+      <div class="diagram-cap">圖 5-1　docker run = 必要時拉映像 → 建立容器 → 配置環境 → 啟動程序</div>
+    </div>
+    <p>常見的 <code>docker run</code> 參數：</p>
+    <table>
+      <tr><th>參數</th><th>用途</th></tr>
+      <tr><td><code>-d</code></td><td>背景執行（detached），不佔住終端機</td></tr>
+      <tr><td><code>-p 8080:80</code></td><td>埠映射：把主機的 8080 導到容器的 80</td></tr>
+      <tr><td><code>--name web</code></td><td>給容器取名，方便後續操作</td></tr>
+      <tr><td><code>-e KEY=value</code></td><td>設定環境變數</td></tr>
+      <tr><td><code>-v vol:/data</code></td><td>掛載 Volume 做資料持久化</td></tr>
+      <tr><td><code>-it</code></td><td>互動模式 + 終端機，常用於進到容器內</td></tr>
+      <tr><td><code>--rm</code></td><td>容器結束後自動刪除（適合一次性任務）</td></tr>
+    </table>
+  </section>
+
+  <!-- 6. 生命週期 -->
+  <section id="lifecycle">
+    <h2>6. Container 生命週期</h2>
+    <p>容器從建立到刪除，會在幾個狀態間轉換，每個轉換對應一個 docker 指令：</p>
+    <div class="diagram">
+      <div class="mermaid">
+stateDiagram-v2
+  Created: 已建立 Created
+  Running: 執行中 Running
+  Paused: 已暫停 Paused
+  Stopped: 已停止 Stopped
+  [*] --> Created: docker create
+  Created --> Running: docker start
+  [*] --> Running: docker run
+  Running --> Paused: docker pause
+  Paused --> Running: docker unpause
+  Running --> Stopped: docker stop / kill
+  Stopped --> Running: docker start
+  Stopped --> [*]: docker rm
+  Running --> [*]: docker rm -f
+      </div>
+      <div class="diagram-cap">圖 6-1　容器生命週期狀態機：注意「停止」不等於「刪除」</div>
+    </div>
+    <div class="warn">
+      <strong>最常見的誤解：</strong><code>docker stop</code> 只是<strong>停止</strong>容器，它還在（用 <code>docker ps -a</code> 看得到），可以再 <code>start</code>。
+      只有 <code>docker rm</code> 才是<strong>刪除</strong>。另外，<code>docker run</code> 每次都<strong>建立全新容器</strong>——
+      如果你想回到剛剛那個容器，要用 <code>docker start</code>，而不是再 <code>run</code> 一次。
+    </div>
+  </section>
+
+  <!-- 7. Dockerfile -->
+  <section id="dockerfile">
+    <h2>7. Dockerfile 與映像分層</h2>
+    <p><strong>Dockerfile</strong> 是一份「建構腳本」，每一行指令告訴 Docker 要做什麼。以一個 Node.js 應用為例：</p>
+<pre><span class="cmt"># 1. 指定基礎映像（這一層是別人建好的）</span>
+<span class="key">FROM</span> node:18-alpine
+
+<span class="cmt"># 2. 設定容器內的工作目錄</span>
+<span class="key">WORKDIR</span> /app
+
+<span class="cmt"># 3. 先只複製依賴清單（為了善用快取，見下一節）</span>
+<span class="key">COPY</span> package*.json ./
+
+<span class="cmt"># 4. 安裝依賴</span>
+<span class="key">RUN</span> npm ci --omit=dev
+
+<span class="cmt"># 5. 再複製其餘原始碼</span>
+<span class="key">COPY</span> . .
+
+<span class="cmt"># 6. 宣告應用使用的埠（僅文件用途，不會自動發布）</span>
+<span class="key">EXPOSE</span> 3000
+
+<span class="cmt"># 7. 容器啟動時執行的預設指令</span>
+<span class="key">CMD</span> [<span class="str">"node"</span>, <span class="str">"server.js"</span>]</pre>
+
+    <h3>常用 Dockerfile 指令</h3>
+    <table>
+      <tr><th>指令</th><th>作用</th></tr>
+      <tr><td><code>FROM</code></td><td>指定基礎映像，每個 Dockerfile 的起點</td></tr>
+      <tr><td><code>WORKDIR</code></td><td>設定後續指令的工作目錄</td></tr>
+      <tr><td><code>COPY</code> / <code>ADD</code></td><td>把檔案複製進映像（<code>ADD</code> 多了解壓縮、抓 URL 功能，一般優先用 <code>COPY</code>）</td></tr>
+      <tr><td><code>RUN</code></td><td>在<strong>建構時</strong>執行指令（如裝套件），會產生新的一層</td></tr>
+      <tr><td><code>ENV</code></td><td>設定環境變數</td></tr>
+      <tr><td><code>EXPOSE</code></td><td>宣告容器監聽的埠（文件性質，實際對外仍需 <code>-p</code>）</td></tr>
+      <tr><td><code>CMD</code></td><td>容器啟動時的<strong>預設</strong>指令，可被 <code>docker run</code> 後面的指令覆蓋</td></tr>
+      <tr><td><code>ENTRYPOINT</code></td><td><strong>固定</strong>的進入點，<code>run</code> 後面的參數會當成它的引數</td></tr>
+    </table>
+
+    <h3>映像是一層一層疊出來的</h3>
+    <p>Dockerfile 中<strong>每一個 <code>FROM</code> / <code>RUN</code> / <code>COPY</code> 指令都會產生一層唯讀的 layer</strong>，疊起來就是最終映像。容器啟動時再在最上面加一個可寫層：</p>
+    <div class="layerstack">
+      <div class="layer writable"><span>可寫層（Container Layer）</span><span class="tag">容器執行時寫入處 · 刪除即消失</span></div>
+      <div class="layer"><span>CMD ["node", "server.js"]</span><span class="tag">設定中繼資料</span></div>
+      <div class="layer"><span>COPY . .</span><span class="tag">Layer</span></div>
+      <div class="layer"><span>RUN npm ci --omit=dev</span><span class="tag">Layer</span></div>
+      <div class="layer"><span>COPY package*.json ./</span><span class="tag">Layer</span></div>
+      <div class="layer base"><span>FROM node:18-alpine</span><span class="tag">基礎映像層</span></div>
+    </div>
+    <div class="stack-note">↑ 由下往上疊：下層唯讀且可被多個映像／容器共用，最上層才是容器專屬的可寫層</div>
+    <div class="tip">
+      <strong>為什麼要懂分層？</strong> 因為分層直接影響兩件事：<strong>映像體積</strong>（層越多越雜越肥）與
+      <strong>建構速度</strong>（沒變的層能直接重用快取）。下一節詳談快取。
+    </div>
+  </section>
+
+  <!-- 8. Build 快取 -->
+  <section id="cache">
+    <h2>8. Build 快取機制</h2>
+    <p>
+      Docker build 時會<strong>逐層檢查</strong>：如果某層的指令與輸入都和上次一樣，就<strong>直接重用快取</strong>，不重跑。
+      但只要<strong>某一層變了，它「之後」的所有層都得重建</strong>。
+    </p>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart TB
+  A["開始 build 第 N 層"] --> B{"這層的指令與輸入<br/>和上次相同嗎？"}
+  B -->|"相同"| C["命中快取<br/>直接重用，跳過執行"]
+  B -->|"不同"| D["快取失效<br/>重新執行這一層"]
+  C --> E{"還有下一層嗎？"}
+  D --> F["這層之後的所有層<br/>都必須重建"]
+  F --> E
+  E -->|"有"| A
+  E -->|"沒有"| G["build 完成"]
+      </div>
+      <div class="diagram-cap">圖 8-1　build 快取逐層判斷：一旦某層失效，後續層全部連鎖重建</div>
+    </div>
+
+    <h3>實務技巧：把「不常變的」放前面</h3>
+    <p>這就是為什麼上一節的 Dockerfile 要<strong>先 <code>COPY package*.json</code> 再 <code>RUN npm ci</code>，最後才 <code>COPY . .</code></strong>：</p>
+    <div class="two-col">
+      <div class="col-box">
+        <h4>✅ 好順序</h4>
+        <pre style="margin:0"><span class="key">COPY</span> package*.json ./
+<span class="key">RUN</span> npm ci
+<span class="key">COPY</span> . .</pre>
+        <p class="muted" style="margin:8px 0 0">改原始碼時，<code>package.json</code> 沒變 → 依賴層命中快取，<strong>不必重裝套件</strong>，build 飛快。</p>
+      </div>
+      <div class="col-box">
+        <h4>❌ 壞順序</h4>
+        <pre style="margin:0"><span class="key">COPY</span> . .
+<span class="key">RUN</span> npm ci</pre>
+        <p class="muted" style="margin:8px 0 0">任何原始碼一改，<code>COPY . .</code> 就失效 → 後面的 <code>npm ci</code> <strong>每次都重裝</strong>，奇慢。</p>
+      </div>
+    </div>
+
+    <h3>Multi-stage build：讓最終映像更小</h3>
+    <p>用多個 <code>FROM</code> 分階段：在「建構階段」編譯／安裝，只把<strong>最終產物</strong>複製到乾淨的「執行階段」，把編譯工具等通通丟掉。</p>
+<pre><span class="cmt"># --- 建構階段：安裝依賴 ---</span>
+<span class="key">FROM</span> node:18-alpine <span class="key">AS</span> deps
+<span class="key">WORKDIR</span> /app
+<span class="key">COPY</span> package*.json ./
+<span class="key">RUN</span> npm ci --omit=dev
+
+<span class="cmt"># --- 執行階段：只拿需要的東西 ---</span>
+<span class="key">FROM</span> node:18-alpine
+<span class="key">WORKDIR</span> /app
+<span class="key">COPY</span> --from=deps /app/node_modules ./node_modules
+<span class="key">COPY</span> . .
+<span class="key">USER</span> node
+<span class="key">EXPOSE</span> 3000
+<span class="key">CMD</span> [<span class="str">"node"</span>, <span class="str">"server.js"</span>]</pre>
+    <div class="tip">
+      搭配 <strong><code>.dockerignore</code></strong> 檔（排除 <code>node_modules</code>、<code>.git</code>、<code>.env</code> 等），可避免把無關檔案塞進映像，同時提升快取命中率。
+    </div>
+  </section>
+
+  <!-- 9. CLI -->
+  <section id="cli">
+    <h2>9. 常用 CLI 指令<span class="badge">速查</span></h2>
+
+    <h4>映像（Image）</h4>
+<pre><span class="cmt"># 從 Docker Hub 拉取映像</span>
+docker pull nginx:1.25
+
+<span class="cmt"># 用當前目錄的 Dockerfile 建映像並打標籤</span>
+docker build -t myapp:1.0 .
+
+<span class="cmt"># 列出本地映像 / 刪除映像</span>
+docker images
+docker rmi myapp:1.0</pre>
+
+    <h4>容器（Container）</h4>
+<pre><span class="cmt"># 背景跑一個 nginx，映射埠、命名</span>
+docker run -d --name web -p <span class="num">8080</span>:<span class="num">80</span> nginx
+
+<span class="cmt"># 看執行中 / 全部（含已停止）的容器</span>
+docker ps
+docker ps -a
+
+<span class="cmt"># 停止、啟動、重啟、刪除</span>
+docker stop web
+docker start web
+docker rm web          <span class="cmt"># 要先停止；強制刪除加 -f</span></pre>
+
+    <h4>除錯與互動</h4>
+<pre><span class="cmt"># 看容器的日誌（-f 持續跟隨）</span>
+docker logs -f web
+
+<span class="cmt"># 進到執行中的容器裡開一個 shell</span>
+docker exec -it web sh
+
+<span class="cmt"># 清理用不到的映像、容器、網路（釋放空間）</span>
+docker system prune</pre>
+  </section>
+
+  <!-- 10. Volume -->
+  <section id="volume">
+    <h2>10. Volume 與資料持久化</h2>
+    <p>
+      容器的可寫層<strong>會隨容器刪除而消失</strong>。所以資料庫、上傳檔案這類需要長期保存的資料，
+      <strong>絕對不能只放在容器裡</strong>，必須掛到容器外。Docker 提供兩種主要做法：
+    </p>
+    <div class="diagram">
+      <div class="mermaid">
+graph LR
+  subgraph C["Container"]
+    P["/var/lib/postgresql/data"]
+  end
+  subgraph H["Host 主機"]
+    V["Docker Volume<br/>/var/lib/docker/volumes/db-data<br/>(Docker 自己管理)"]
+    B["Bind Mount<br/>/home/user/data<br/>(你指定的主機目錄)"]
+  end
+  P -->|"Volume：推薦"| V
+  P -->|"Bind Mount"| B
+      </div>
+      <div class="diagram-cap">圖 10-1　Volume 由 Docker 管理（推薦）；Bind Mount 直接對應主機上的指定目錄</div>
+    </div>
+    <table>
+      <tr><th></th><th>Volume（資料卷）</th><th>Bind Mount（綁定掛載）</th></tr>
+      <tr><td>儲存位置</td><td>由 Docker 管理（<code>/var/lib/docker/volumes</code>）</td><td>主機上任意指定路徑</td></tr>
+      <tr><td>建立方式</td><td><code>-v db-data:/data</code></td><td><code>-v /home/user/data:/data</code></td></tr>
+      <tr><td>適合場景</td><td>資料庫、正式環境資料（可攜、好備份）</td><td>開發時即時同步原始碼到容器</td></tr>
+      <tr><td>可攜性</td><td>高，與主機目錄結構無關</td><td>低，依賴主機路徑</td></tr>
+    </table>
+<pre><span class="cmt"># 建立並使用 volume（資料持久化）</span>
+docker volume create db-data
+docker run -d -v db-data:/var/lib/postgresql/data postgres:16
+
+<span class="cmt"># 開發時用 bind mount 即時同步程式碼</span>
+docker run -d -v <span class="str">"$(pwd)"</span>:/app node:18 npm run dev</pre>
+    <div class="warn">
+      <strong>新手最痛的坑：</strong>把資料庫直接跑在容器裡卻沒掛 Volume，某天 <code>docker rm</code> 一下，<strong>所有資料瞬間蒸發</strong>。正式環境的有狀態服務，務必掛 Volume。
+    </div>
+  </section>
+
+  <!-- 11. 網路 -->
+  <section id="network">
+    <h2>11. 網路（Network）</h2>
+    <p>容器預設是隔離的，要讓「外部存取容器」或「容器之間互通」，就要靠 Docker 網路。最常用的是 <strong>bridge（橋接）</strong>模式。</p>
+    <div class="diagram">
+      <div class="mermaid">
+graph TB
+  EXT["外部 / 瀏覽器"]
+  subgraph HOST["Host 主機"]
+    PORT["Host Port 8080"]
+    subgraph BR["自訂 bridge 網路 my-net"]
+      C1["容器 web<br/>監聽 :3000"]
+      C2["容器 db<br/>監聽 :5432"]
+    end
+  end
+  EXT -->|"連 http://host:8080"| PORT
+  PORT -->|"-p 8080:3000 映射"| C1
+  C1 -->|"用容器名 db 直接連線"| C2
+      </div>
+      <div class="diagram-cap">圖 11-1　外部透過埠映射進到 web；同一網路內的容器可用「容器名稱」當主機名互連</div>
+    </div>
+    <table>
+      <tr><th>網路模式</th><th>說明</th></tr>
+      <tr><td><strong>bridge</strong>（預設）</td><td>容器接到虛擬橋接網路。建議自建網路（<code>docker network create</code>），同網路內可用<strong>容器名稱當 DNS</strong> 互連。</td></tr>
+      <tr><td><strong>host</strong></td><td>容器直接共用主機網路，不做隔離與埠映射，效能高但少了隔離。</td></tr>
+      <tr><td><strong>none</strong></td><td>完全沒有網路，最高隔離。</td></tr>
+    </table>
+    <div class="note">
+      <strong>埠映射 <code>-p 主機埠:容器埠</code></strong> 是讓外部世界進入容器的橋樑。沒做映射，容器內的服務從主機外是連不到的。
+    </div>
+  </section>
+
+  <!-- 12. Compose -->
+  <section id="compose">
+    <h2>12. Docker Compose 多容器編排</h2>
+    <p>
+      真實應用通常不只一個容器（例如 web + 資料庫 + 快取）。一個個手動 <code>docker run</code> 又長又容易錯。
+      <strong>Docker Compose</strong> 讓你用一份 <code>compose.yaml</code> 宣告所有服務，一個指令全部拉起。
+    </p>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart TB
+  Y["compose.yaml"] -->|"docker compose up -d"| ENG["Docker"]
+  ENG --> NET["建立專屬網路"]
+  ENG --> WEB["啟動 web 服務"]
+  ENG --> DB["啟動 db 服務"]
+  ENG --> VOL["建立 volume db-data"]
+  WEB -.->|"同一網路，用服務名互連"| DB
+  DB --- VOL
+      </div>
+      <div class="diagram-cap">圖 12-1　一份 YAML 描述整套應用，Compose 幫你建網路、起容器、掛 volume</div>
+    </div>
+<pre><span class="key">services</span>:
+  <span class="key">web</span>:
+    <span class="key">build</span>: .                       <span class="cmt"># 用當前目錄 Dockerfile 建映像</span>
+    <span class="key">ports</span>:
+      - <span class="str">"8080:3000"</span>               <span class="cmt"># 主機 8080 → 容器 3000</span>
+    <span class="key">environment</span>:
+      - DATABASE_URL=postgres://user:pass@db:5432/app
+    <span class="key">depends_on</span>:
+      - db                          <span class="cmt"># 先起 db 再起 web</span>
+
+  <span class="key">db</span>:
+    <span class="key">image</span>: postgres:16-alpine
+    <span class="key">environment</span>:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=pass
+      - POSTGRES_DB=app
+    <span class="key">volumes</span>:
+      - db-data:/var/lib/postgresql/data   <span class="cmt"># 持久化資料庫</span>
+
+<span class="key">volumes</span>:
+  db-data:</pre>
+    <p>常用 Compose 指令：</p>
+<pre>docker compose up -d        <span class="cmt"># 背景啟動全部服務</span>
+docker compose ps           <span class="cmt"># 看服務狀態</span>
+docker compose logs -f web  <span class="cmt"># 跟隨某服務日誌</span>
+docker compose down         <span class="cmt"># 停止並移除容器與網路（加 -v 連 volume 一起刪）</span></pre>
+    <div class="tip">
+      <strong>關鍵優勢：</strong>Compose 自動建立一個專屬網路，服務之間可直接用<strong>服務名稱</strong>（上例的 <code>db</code>）互相連線，不必管 IP。
+    </div>
+  </section>
+
+  <!-- 13. 實戰 + 最佳實踐 -->
+  <section id="practice">
+    <h2>13. 實戰範例與最佳實踐</h2>
+
+    <h3>從開發到部署的完整流程</h3>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart LR
+  DEV["原始碼 + Dockerfile"] -->|"docker build"| IMG["Image"]
+  IMG -->|"docker push"| HUB["Registry<br/>Docker Hub"]
+  HUB -->|"docker pull"| SRV["部署伺服器"]
+  SRV -->|"compose up -d"| PROD["執行中的容器"]
+      </div>
+      <div class="diagram-cap">圖 13-1　典型的容器化交付流程：build → push → pull → run，這也是 CI/CD 的骨架</div>
+    </div>
+
+    <div class="two-col">
+      <div class="col-box">
+        <h4>✅ 最佳實踐</h4>
+        <ul>
+          <li>用官方、輕量的基礎映像（如 <code>-alpine</code> 版本）。</li>
+          <li>善用 <strong>multi-stage build</strong> 縮小映像體積。</li>
+          <li>一定要寫 <strong><code>.dockerignore</code></strong>。</li>
+          <li>把不常變的指令放 Dockerfile 前面，<strong>最大化快取</strong>。</li>
+          <li>固定明確的<strong>版本標籤</strong>（<code>node:18.20</code>），別只用 <code>latest</code>。</li>
+          <li>一個容器專注做<strong>一件事</strong>（單一職責）。</li>
+          <li>用 <code>USER</code> 以<strong>非 root</strong> 身份執行，提升安全。</li>
+          <li>有狀態資料一律掛 <strong>Volume</strong>。</li>
+          <li>密碼／金鑰用環境變數或 secrets，<strong>別寫進映像</strong>。</li>
+        </ul>
+      </div>
+      <div class="col-box">
+        <h4>⚠️ 常見陷阱</h4>
+        <ul>
+          <li>資料沒掛 Volume，刪容器就<strong>資料全失</strong>。</li>
+          <li><code>COPY . .</code> 把 <code>node_modules</code>、<code>.git</code> 一起包進去，映像爆肥。</li>
+          <li>把快取友善的指令順序寫反，<strong>每次都重裝</strong>依賴。</li>
+          <li>只用 <code>latest</code>，導致部署<strong>不可重現</strong>。</li>
+          <li>忘了 <code>-p</code> 映射埠，外部<strong>連不到</strong>服務。</li>
+          <li>混淆 <code>run</code> 與 <code>start</code>：每次 <code>run</code> 都是<strong>新容器</strong>。</li>
+          <li>把多個服務硬塞進<strong>同一個容器</strong>，難維護、難擴展。</li>
+          <li>映像裡寫死密碼，推上 Hub 後<strong>外洩</strong>。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tip">
+      <strong>學習路徑建議：</strong>先 <code>docker run</code> 跑起官方 nginx／postgres 玩一玩、用 <code>docker ps / logs / exec</code> 觀察；
+      接著替自己的小專案寫一份 Dockerfile 並 <code>build</code>；理解分層與快取後，用 multi-stage 優化體積；
+      最後用 <strong>Docker Compose</strong> 把 web + 資料庫串起來。<strong>每一步都動手敲指令，觀念會牢固得多。</strong>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Docker 詳細教學 · 概念說明搭配 Mermaid 流程圖 · 僅供學習參考
+</footer>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#e8f1fb',
+      primaryBorderColor: '#2496ed',
+      primaryTextColor: '#0d2c44',
+      lineColor: '#7f8c99',
+      secondaryColor: '#eaf3fc',
+      tertiaryColor: '#f6f8fa',
+      fontFamily: 'Segoe UI, Microsoft JhengHei, sans-serif',
+      fontSize: '14px'
+    },
+    flowchart: { curve: 'basis', useMaxWidth: true },
+    sequence: { useMaxWidth: true }
+  });
+</script>
+</body>
+</html>
