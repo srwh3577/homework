@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HAProxy 詳細教學</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f9f8;
+    --card: #ffffff;
+    --text: #1a2a26;
+    --muted: #5d736d;
+    --accent: #0e8674;
+    --accent-dark: #0a5e51;
+    --code-bg: #16241f;
+    --code-text: #e3eeeb;
+    --border: #d9e7e3;
+    --ok: #1f9d57;
+    --err: #d6453d;
+    --orange: #e07b2b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.75;
+  }
+  header {
+    background: linear-gradient(135deg, #042e25, #0a5e51 50%, #14a691);
+    color: #fff;
+    padding: 52px 24px;
+    text-align: center;
+  }
+  header h1 { margin: 0 0 10px; font-size: 2.2rem; letter-spacing: .5px; }
+  header p { margin: 0; opacity: .92; font-size: 1.05rem; }
+  header .sub { margin-top: 14px; font-size: .9rem; opacity: .78; }
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 20px 80px;
+  }
+  section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin: 22px 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  h2 {
+    margin-top: 0;
+    font-size: 1.5rem;
+    border-left: 4px solid var(--accent);
+    padding-left: 12px;
+  }
+  h3 { font-size: 1.18rem; color: var(--accent-dark); margin-top: 30px; }
+  h4 { font-size: 1.02rem; color: var(--text); margin: 22px 0 6px; }
+  p { color: var(--text); }
+  ul, ol { padding-left: 24px; }
+  li { margin: 4px 0; }
+  .muted { color: var(--muted); font-size: .92rem; }
+  strong.k { color: var(--accent-dark); }
+  code.inline {
+    background: #d9efea;
+    color: #075648;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: .9em;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 18px 20px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: .88rem;
+    line-height: 1.65;
+    margin: 14px 0;
+  }
+  pre .cmt { color: #7d918d; font-style: italic; }
+  pre .key { color: #88d4c2; }
+  pre .str { color: #c5e6a3; }
+  pre .fn  { color: #ffd479; }
+  pre .num { color: #f0a868; }
+  pre .sec { color: #5ec4ed; font-weight: 600; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: .93rem;
+  }
+  th, td {
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th { background: #e2f1ee; color: var(--accent-dark); }
+  td code, th code { color: #075648; font-family: "Consolas", monospace; }
+  .toc {
+    background: #e2f1ee;
+    border: 1px solid #c2dfd9;
+  }
+  .toc ol { margin: 8px 0 0; padding-left: 24px; columns: 2; }
+  .toc a { color: var(--accent-dark); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .tip {
+    border-left: 4px solid var(--ok);
+    background: #effaf3;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .warn {
+    border-left: 4px solid #e0a800;
+    background: #fff8e6;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  .note {
+    border-left: 4px solid var(--accent);
+    background: #e2f1ee;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+  }
+  /* 圖表容器 */
+  .diagram {
+    background: #fbfefd;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 16px 10px;
+    margin: 20px 0;
+    text-align: center;
+    overflow-x: auto;
+  }
+  .diagram .mermaid { display: inline-block; min-width: 100%; }
+  .diagram-cap {
+    text-align: center;
+    color: var(--muted);
+    font-size: .85rem;
+    margin: 4px 0 6px;
+  }
+  /* server pool 視覺化 */
+  .pool { max-width: 560px; margin: 18px auto; }
+  .pool-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid #cfdedb; background: #fff; border-radius: 6px; margin: 6px 0; font-family: "Consolas", monospace; font-size:.88rem; }
+  .pool-row .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .pool-row.up   .dot { background: #1f9d57; box-shadow: 0 0 0 3px #d4edda; }
+  .pool-row.down .dot { background: #d6453d; box-shadow: 0 0 0 3px #f6dad7; }
+  .pool-row .name { font-weight: 600; min-width: 60px; }
+  .pool-row .addr { color: #5d736d; flex: 1; }
+  .pool-row .status { font-size: .78rem; padding: 2px 8px; border-radius: 10px; }
+  .pool-row.up   .status { background: #d4edda; color: #14622f; }
+  .pool-row.down .status { background: #f6dad7; color: #8e2922; }
+  .badge {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    font-size: .72rem;
+    padding: 2px 9px;
+    border-radius: 10px;
+    vertical-align: middle;
+    margin-left: 8px;
+  }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) {
+    .two-col { grid-template-columns: 1fr; }
+    .toc ol { columns: 1; }
+    section { padding: 22px 18px; }
+  }
+  .col-box {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    background: #fff;
+  }
+  .col-box h4 { margin-top: 0; }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 30px;
+    font-size: .88rem;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>HAProxy 詳細教學</h1>
+  <p>從負載平衡原理到高可用部署，搭配大量流程圖，徹底搞懂這套業界標準的反向代理</p>
+  <div class="sub">涵蓋 frontend/backend · L4/L7 · 演算法 · 健康檢查 · ACL · Sticky · SSL · Keepalived</div>
+</header>
+
+<main>
+
+  <!-- 目錄 -->
+  <section class="toc">
+    <h2>目錄</h2>
+    <ol>
+      <li><a href="#what">1. 什麼是 HAProxy？</a></li>
+      <li><a href="#proxy">2. 反向代理 vs 正向代理</a></li>
+      <li><a href="#arch">3. 核心架構：frontend / backend</a></li>
+      <li><a href="#mode">4. TCP（L4）vs HTTP（L7）模式</a></li>
+      <li><a href="#flow">5. 一個請求的完整處理流程</a></li>
+      <li><a href="#balance">6. 負載平衡演算法</a></li>
+      <li><a href="#health">7. 健康檢查（Health Check）</a></li>
+      <li><a href="#config">8. 設定檔結構與完整範例</a></li>
+      <li><a href="#acl">9. ACL 與內容路由</a></li>
+      <li><a href="#sticky">10. Session 黏滯（Sticky）</a></li>
+      <li><a href="#ssl">11. SSL/TLS Termination</a></li>
+      <li><a href="#ha">12. 高可用：HAProxy + Keepalived</a></li>
+      <li><a href="#stats">13. Stats 頁面與監控</a></li>
+      <li><a href="#practice">14. 最佳實踐與常見陷阱</a></li>
+    </ol>
+  </section>
+
+  <!-- 1. 什麼是 HAProxy -->
+  <section id="what">
+    <h2>1. 什麼是 HAProxy？</h2>
+    <p>
+      <strong>HAProxy</strong>（<strong>H</strong>igh <strong>A</strong>vailability <strong>Proxy</strong>）是一套以 C 語言寫成的
+      <strong class="k">高效能 TCP/HTTP 負載平衡器與反向代理</strong>。它能把湧入的流量公平地分發到多台後端伺服器，並在某台伺服器故障時自動排除它——
+      所以一台普通伺服器扛不住的流量、單機故障就服務中斷的問題，到了 HAProxy 面前都能迎刃而解。
+    </p>
+
+    <h3>沒有 vs 有負載平衡器</h3>
+    <div class="two-col">
+      <div class="col-box">
+        <h4>❌ 沒有 LB：單點故障 + 瓶頸</h4>
+        <div class="diagram" style="margin:6px 0">
+          <div class="mermaid">
+graph LR
+  C1["Client A"] --> S["Web Server<br/>(唯一一台)"]
+  C2["Client B"] --> S
+  C3["Client C"] --> S
+          </div>
+        </div>
+        <p class="muted" style="margin:6px 0 0">流量、可用性全壓在一台機器上。它一掛，整個服務都掛。</p>
+      </div>
+      <div class="col-box">
+        <h4>✅ 有 HAProxy：分流 + 容錯</h4>
+        <div class="diagram" style="margin:6px 0">
+          <div class="mermaid">
+graph LR
+  C1["Client A"] --> HA["HAProxy"]
+  C2["Client B"] --> HA
+  C3["Client C"] --> HA
+  HA --> S1["Web 1"]
+  HA --> S2["Web 2"]
+  HA --> S3["Web 3"]
+          </div>
+        </div>
+        <p class="muted" style="margin:6px 0 0">流量被分散到多台 Web；任一台掛了，HAProxy 自動把它跳過。</p>
+      </div>
+    </div>
+    <p>HAProxy 提供的核心能力：</p>
+    <ul>
+      <li><strong>負載平衡</strong>：把流量依各種策略（輪詢、最少連線、來源 IP hash……）分發到多台後端。</li>
+      <li><strong>高可用</strong>：透過健康檢查自動排除故障節點；自身可雙機熱備（Keepalived）。</li>
+      <li><strong>反向代理</strong>：對外只露一個入口，後端伺服器藏在內網，安全且彈性。</li>
+      <li><strong>SSL Termination</strong>：在 LB 統一處理 HTTPS 加解密，減輕後端負擔。</li>
+      <li><strong>內容路由</strong>：依 URL、Host、Cookie 等規則把請求送到不同 backend。</li>
+    </ul>
+  </section>
+
+  <!-- 2. 正向 vs 反向 -->
+  <section id="proxy">
+    <h2>2. 反向代理 vs 正向代理</h2>
+    <p>「代理」分兩種方向，HAProxy 屬於<strong>反向</strong>。先把這個觀念釐清，後面才不會打結。</p>
+
+    <h4>正向代理（Forward Proxy）：代理「客戶端」</h4>
+    <div class="diagram">
+      <div class="mermaid">
+graph LR
+  C1["Client 1"] --> FP["Forward Proxy<br/>(站在客戶端那一側)"]
+  C2["Client 2"] --> FP
+  FP --> S1["google.com"]
+  FP --> S2["github.com"]
+      </div>
+      <div class="diagram-cap">圖 2-1　典型例子：公司內網 → Proxy → 外網。客戶端「知道」自己在用 Proxy。</div>
+    </div>
+
+    <h4>反向代理（Reverse Proxy）：代理「伺服器」</h4>
+    <div class="diagram">
+      <div class="mermaid">
+graph LR
+  C1["Client 1"] --> RP["Reverse Proxy<br/>(站在伺服器那一側)<br/>HAProxy / Nginx"]
+  C2["Client 2"] --> RP
+  RP --> S1["Web 1<br/>(內網)"]
+  RP --> S2["Web 2<br/>(內網)"]
+  RP --> S3["Web 3<br/>(內網)"]
+      </div>
+      <div class="diagram-cap">圖 2-2　客戶端「以為」直接連到網站；後端 server 池對外不可見</div>
+    </div>
+    <table>
+      <tr><th></th><th>正向代理</th><th>反向代理（HAProxy）</th></tr>
+      <tr><td>代理對象</td><td>客戶端</td><td>伺服器</td></tr>
+      <tr><td>誰知道它存在</td><td>客戶端知道</td><td>客戶端不知道</td></tr>
+      <tr><td>典型用途</td><td>翻牆、上網過濾、企業出口控管</td><td>負載平衡、SSL 卸載、隱藏後端、加速</td></tr>
+    </table>
+  </section>
+
+  <!-- 3. 核心架構 -->
+  <section id="arch">
+    <h2>3. 核心架構：frontend / backend</h2>
+    <p>HAProxy 的設定圍繞兩個核心概念：<strong>frontend</strong>（誰進來）與 <strong>backend</strong>（往哪去）。</p>
+    <div class="diagram">
+      <div class="mermaid">
+graph LR
+  C["客戶端"] -->|":80 / :443"| FE["Frontend<br/>定義監聽位址<br/>套用 ACL"]
+  FE -->|"依規則選定"| BE["Backend<br/>定義 server 池<br/>套用演算法"]
+  BE --> S1["server web1<br/>10.0.0.11:8080"]
+  BE --> S2["server web2<br/>10.0.0.12:8080"]
+  BE --> S3["server web3<br/>10.0.0.13:8080"]
+  style FE fill:#e0f2ef,stroke:#0e8674
+  style BE fill:#fcefe2,stroke:#e07b2b
+      </div>
+      <div class="diagram-cap">圖 3-1　Frontend 接收請求 → 決定要送去哪個 Backend → Backend 從 server 池中選一台轉發</div>
+    </div>
+    <table>
+      <tr><th>術語</th><th>說明</th></tr>
+      <tr><td><strong>frontend</strong></td><td>定義「監聽哪個位址/埠」，並透過 ACL 與 <code>use_backend</code> 決定請求要送到哪個 backend。</td></tr>
+      <tr><td><strong>backend</strong></td><td>定義一組後端 server，配合<strong>負載平衡演算法</strong>（<code>balance</code>）與<strong>健康檢查</strong>（<code>check</code>）分配流量。</td></tr>
+      <tr><td><strong>server</strong></td><td>backend 裡的一台實體後端，含 IP、埠、權重、檢查、cookie 等屬性。</td></tr>
+      <tr><td><strong>listen</strong></td><td>frontend + backend 的「合一」簡化版，適合單純場景。</td></tr>
+      <tr><td><strong>ACL</strong></td><td>條件規則（如 path、header、源 IP），用來做路由判斷或封鎖。</td></tr>
+      <tr><td><strong>mode</strong></td><td><code>tcp</code> 或 <code>http</code>，決定要不要解析應用層協定（見第 4 節）。</td></tr>
+    </table>
+  </section>
+
+  <!-- 4. L4 vs L7 -->
+  <section id="mode">
+    <h2>4. TCP（L4）vs HTTP（L7）模式</h2>
+    <p>HAProxy 可工作在 OSI 第 4 層（TCP）或第 7 層（HTTP），這是兩種完全不同的能力光譜。</p>
+    <div class="two-col">
+      <div class="col-box">
+        <h4>mode tcp（Layer 4）</h4>
+        <div class="diagram" style="margin:6px 0">
+          <div class="mermaid">
+graph LR
+  C["Client"] -->|"TCP 位元組"| HA["HAProxy<br/>L4 mode<br/>只看 IP + Port"]
+  HA -->|"原樣轉發"| S["Backend"]
+          </div>
+        </div>
+        <ul style="margin:6px 0 0">
+          <li>不解析應用層內容，<strong>極快</strong>。</li>
+          <li>適合任何 TCP 服務：MySQL、Redis、SMTP、純 TCP。</li>
+          <li>無法依 URL/Header 路由。</li>
+        </ul>
+      </div>
+      <div class="col-box">
+        <h4>mode http（Layer 7）</h4>
+        <div class="diagram" style="margin:6px 0">
+          <div class="mermaid">
+graph LR
+  C["Client"] -->|"HTTP request"| HA["HAProxy<br/>L7 mode<br/>解析 HTTP"]
+  HA -->|"可依 URL/Header 路由<br/>可改寫 Header"| S["Backend"]
+          </div>
+        </div>
+        <ul style="margin:6px 0 0">
+          <li>解析 HTTP，可看 URL、Method、Header、Cookie。</li>
+          <li>支援 ACL 內容路由、Header 改寫、HTTP/2、HTTPS 卸載。</li>
+          <li>稍慢，但 Web 場景幾乎一定用這個。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="tip">
+      <strong>實務原則：</strong>HTTP/HTTPS 服務一律用 <code>mode http</code>；其他協定（資料庫、訊息佇列）用 <code>mode tcp</code>。
+    </div>
+  </section>
+
+  <!-- 5. 請求處理流程 -->
+  <section id="flow">
+    <h2>5. 一個請求的完整處理流程</h2>
+    <p>從請求到達 frontend、到回應送回客戶端，HAProxy 內部走的決策路徑：</p>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart TB
+  R["請求到達 Frontend"] --> M{"mode 是 http?"}
+  M -->|"是"| PARSE["解析 HTTP<br/>(URL/Header/Cookie)"]
+  M -->|"否"| L4["L4 直接轉發位元組"]
+  PARSE --> ACL["評估 ACL 規則"]
+  ACL --> SEL["use_backend 選定 Backend<br/>(沒匹配則 default_backend)"]
+  L4 --> SEL
+  SEL --> ALG["依 balance 演算法<br/>從健康的 server 中選一台"]
+  ALG --> HC{"server 健康?"}
+  HC -->|"是"| FWD["建立連線並轉發"]
+  HC -->|"否"| RETRY["跳過，選下一台"]
+  RETRY --> ALG
+  FWD --> RESP["回應送回客戶端"]
+  style PARSE fill:#e0f2ef,stroke:#0e8674
+  style ACL fill:#e0f2ef,stroke:#0e8674
+  style ALG fill:#fcefe2,stroke:#e07b2b
+  style FWD fill:#e6f4ec,stroke:#1f9d57,color:#0f6b3a
+      </div>
+      <div class="diagram-cap">圖 5-1　Frontend 解析 → ACL 路由 → Backend 選 server → 健康檢查 → 轉發</div>
+    </div>
+    <div class="note">
+      看懂這張圖，你就懂了 HAProxy 80% 的設計：剩下的章節是在補充每個步驟的細節（演算法、ACL、健康檢查……）。
+    </div>
+  </section>
+
+  <!-- 6. 演算法 -->
+  <section id="balance">
+    <h2>6. 負載平衡演算法</h2>
+    <p>在 backend 用 <code>balance &lt;算法&gt;</code> 指定。怎麼選？看你的需求：</p>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart TB
+  Q1{"請求的特性是什麼?"}
+  Q1 -->|"無狀態，連線短而平均"| RR["roundrobin<br/>(預設) 輪詢"]
+  Q1 -->|"連線長且差異大<br/>(WebSocket / DB)"| LC["leastconn<br/>送往連線最少的"]
+  Q1 -->|"需要『同來源IP 同 server』"| SRC["source<br/>依 source IP hash"]
+  Q1 -->|"需要『同 URL 同 server』<br/>(快取友善)"| URI["uri<br/>(HTTP only) 依 URI hash"]
+  Q1 -->|"依某 Cookie/Header"| HDR["hdr() / url_param<br/>依指定欄位 hash"]
+  style RR fill:#e0f2ef,stroke:#0e8674
+  style LC fill:#e0f2ef,stroke:#0e8674
+  style SRC fill:#fcefe2,stroke:#e07b2b
+  style URI fill:#fcefe2,stroke:#e07b2b
+  style HDR fill:#fcefe2,stroke:#e07b2b
+      </div>
+      <div class="diagram-cap">圖 6-1　依請求特性選擇演算法的決策樹</div>
+    </div>
+    <table>
+      <tr><th>演算法</th><th>說明</th><th>適用</th></tr>
+      <tr><td><code>roundrobin</code></td><td>輪流分配，支援動態調整 <code>weight</code></td><td>無狀態、處理時間平均的請求（預設選擇）</td></tr>
+      <tr><td><code>static-rr</code></td><td>靜態輪詢，weight 不可動態改</td><td>跟 <code>roundrobin</code> 類似但更快</td></tr>
+      <tr><td><code>leastconn</code></td><td>送給「目前連線數最少」的 server</td><td>長連線、處理時間差異大（LDAP、SQL、WebSocket）</td></tr>
+      <tr><td><code>source</code></td><td>依 source IP hash</td><td>需要「同 IP → 同 server」的簡單黏滯</td></tr>
+      <tr><td><code>uri</code></td><td>依 URI hash（HTTP only）</td><td>後端有快取，希望「同 URL → 同 server」提高命中率</td></tr>
+      <tr><td><code>url_param</code> / <code>hdr(name)</code></td><td>依某 URL 參數或 Header hash</td><td>已用 token / userId 做識別</td></tr>
+      <tr><td><code>first</code></td><td>一律先送第一台，第一台滿了才送下一台</td><td>節能、彈性縮放（讓多餘 server 閒置）</td></tr>
+    </table>
+    <div class="warn">
+      <strong>用 <code>source</code> 的陷阱：</strong>若所有客戶端都從同一個 NAT 出口（例如公司、行動網路）來，
+      hash 後會擠到同一台 server，<strong>負載完全不均</strong>。考慮改用 cookie-based sticky（第 10 節）。
+    </div>
+  </section>
+
+  <!-- 7. 健康檢查 -->
+  <section id="health">
+    <h2>7. 健康檢查（Health Check）</h2>
+    <p>
+      在 server 設定後面加 <code>check</code>，HAProxy 就會定期探測這台後端是否還活著。
+      探測連續失敗 <code>fall</code> 次標記為 DOWN，連續成功 <code>rise</code> 次標記為 UP。<strong>DOWN 的 server 不再收新流量。</strong>
+    </p>
+    <div class="diagram">
+      <div class="mermaid">
+stateDiagram-v2
+  Up: 健康 UP（接收流量）
+  Down: 故障 DOWN（不分配新請求）
+  [*] --> Up
+  Up --> Down: 連續失敗 fall 次
+  Down --> Up: 連續成功 rise 次
+      </div>
+      <div class="diagram-cap">圖 7-1　健康檢查的狀態機：來回切換由 fall/rise 控制，避免抖動</div>
+    </div>
+<pre><span class="sec">backend</span> web_servers
+    <span class="key">option httpchk</span> GET /health         <span class="cmt"># 用 HTTP GET /health 當健康檢查</span>
+    <span class="key">http-check expect</span> status 200      <span class="cmt"># 預期回 200 才算 UP</span>
+    <span class="key">default-server</span> inter <span class="num">3s</span> fall <span class="num">3</span> rise <span class="num">2</span>  <span class="cmt"># 每 3s 檢查；3 次失敗算掛；2 次成功復活</span>
+    <span class="key">server</span> web1 <span class="num">10.0.0.11</span>:<span class="num">8080</span> check
+    <span class="key">server</span> web2 <span class="num">10.0.0.12</span>:<span class="num">8080</span> check
+    <span class="key">server</span> web3 <span class="num">10.0.0.13</span>:<span class="num">8080</span> check backup   <span class="cmt"># backup：全死才啟用</span></pre>
+    <h4>視覺化 server 池狀態</h4>
+    <div class="pool">
+      <div class="pool-row up"><span class="dot"></span><span class="name">web1</span><span class="addr">10.0.0.11:8080 · weight 100</span><span class="status">UP</span></div>
+      <div class="pool-row up"><span class="dot"></span><span class="name">web2</span><span class="addr">10.0.0.12:8080 · weight 100</span><span class="status">UP</span></div>
+      <div class="pool-row down"><span class="dot"></span><span class="name">web3</span><span class="addr">10.0.0.13:8080 · 連 3 次健康檢查失敗</span><span class="status">DOWN</span></div>
+    </div>
+    <p class="muted" style="text-align:center;margin:4px 0">↑ web3 DOWN，新請求自動只分配給 web1 / web2，零中斷</p>
+    <div class="tip">
+      <strong>專用健康檢查端點：</strong>後端應提供 <code>/health</code>（或 <code>/ping</code>）這類<strong>輕量</strong>端點——
+      回 200 = OK，500 = 我有問題，請別再給我流量。避免用首頁這種重邏輯當檢查目標。
+    </div>
+  </section>
+
+  <!-- 8. 設定檔 -->
+  <section id="config">
+    <h2>8. 設定檔結構與完整範例<span class="badge">動手做</span></h2>
+    <p>HAProxy 設定檔（通常 <code>/etc/haproxy/haproxy.cfg</code>）由幾個區段組成：</p>
+    <table>
+      <tr><th>區段</th><th>作用</th></tr>
+      <tr><td><code>global</code></td><td>進程級設定：log、user、maxconn、SSL 預設等。整份檔案只有一個。</td></tr>
+      <tr><td><code>defaults</code></td><td>後續所有 frontend / backend / listen 共用的預設值（mode、timeout、option…）。</td></tr>
+      <tr><td><code>frontend</code></td><td>監聽 + ACL + 路由規則。</td></tr>
+      <tr><td><code>backend</code></td><td>server 池 + balance + 健康檢查。</td></tr>
+      <tr><td><code>listen</code></td><td>frontend + backend 的合體簡寫。</td></tr>
+    </table>
+
+    <h4>一份完整的入門設定：HTTP 平衡到 3 台後端</h4>
+<pre><span class="sec">global</span>
+    <span class="key">log</span> /dev/log local0
+    <span class="key">maxconn</span> <span class="num">50000</span>
+    <span class="key">user</span> haproxy
+    <span class="key">group</span> haproxy
+    <span class="key">daemon</span>
+
+<span class="sec">defaults</span>
+    <span class="key">mode</span> http
+    <span class="key">log</span> global
+    <span class="key">option</span> httplog
+    <span class="key">option</span> dontlognull          <span class="cmt"># 不記錄空連線（健康檢查噪音）</span>
+    <span class="key">option</span> forwardfor           <span class="cmt"># 加 X-Forwarded-For，讓後端看到真實 client IP</span>
+    <span class="key">timeout connect</span> <span class="num">5s</span>
+    <span class="key">timeout client</span>  <span class="num">30s</span>
+    <span class="key">timeout server</span>  <span class="num">30s</span>
+
+<span class="sec">frontend</span> http_in
+    <span class="key">bind</span> *:<span class="num">80</span>
+    <span class="key">default_backend</span> web_servers
+
+<span class="sec">backend</span> web_servers
+    <span class="key">balance</span> roundrobin
+    <span class="key">option httpchk</span> GET /health
+    <span class="key">server</span> web1 <span class="num">10.0.0.11</span>:<span class="num">8080</span> check
+    <span class="key">server</span> web2 <span class="num">10.0.0.12</span>:<span class="num">8080</span> check
+    <span class="key">server</span> web3 <span class="num">10.0.0.13</span>:<span class="num">8080</span> check backup</pre>
+
+    <h4>啟動與重載</h4>
+<pre><span class="cmt"># 檢查語法（改設定後一定要先驗證）</span>
+haproxy -c -f /etc/haproxy/haproxy.cfg
+
+<span class="cmt"># 啟動 / 重啟 / 平滑重載（推薦：不中斷既有連線）</span>
+systemctl start haproxy
+systemctl reload haproxy</pre>
+    <div class="warn">
+      <strong>用 <code>reload</code>，不要用 <code>restart</code></strong>：reload 會優雅地把舊進程留著處理現存連線，新連線交給新進程，幾乎零中斷。restart 會殺斷所有連線。
+    </div>
+  </section>
+
+  <!-- 9. ACL -->
+  <section id="acl">
+    <h2>9. ACL 與內容路由</h2>
+    <p>
+      <strong>ACL（Access Control List）</strong> 是 HAProxy 的條件規則語法。它能取得請求的任意屬性（URL 路徑、Host、來源 IP、Cookie……），
+      然後讓 <code>use_backend</code>、<code>http-request deny</code>、<code>http-request redirect</code> 等指令依條件決策。
+    </p>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart LR
+  R["請求<br/>Host + Path"] --> FE["Frontend"]
+  FE -->|"path 以 /api/ 開頭"| BE_API["backend api_servers"]
+  FE -->|"path 以 /static/ 開頭"| BE_STATIC["backend static_servers"]
+  FE -->|"Host = admin.example.com"| BE_ADMIN["backend admin_servers"]
+  FE -->|"以上都不符合"| BE_WEB["default_backend web_servers"]
+  style FE fill:#e0f2ef,stroke:#0e8674
+  style BE_API fill:#fcefe2,stroke:#e07b2b
+  style BE_STATIC fill:#fcefe2,stroke:#e07b2b
+  style BE_ADMIN fill:#fcefe2,stroke:#e07b2b
+      </div>
+      <div class="diagram-cap">圖 9-1　依 Host / Path 把同一個入口的流量送到不同 backend</div>
+    </div>
+<pre><span class="sec">frontend</span> http_in
+    <span class="key">bind</span> *:<span class="num">80</span>
+
+    <span class="cmt"># 定義 ACL（給條件取個名字）</span>
+    <span class="key">acl</span> is_api    path_beg /api/
+    <span class="key">acl</span> is_static path_beg /static/
+    <span class="key">acl</span> is_admin  hdr(host) -i admin.example.com
+    <span class="key">acl</span> is_intern src <span class="num">10.0.0.0</span>/<span class="num">8</span>
+
+    <span class="cmt"># 依條件路由（從上而下，第一個匹配就採用）</span>
+    <span class="key">use_backend</span> api_servers    if is_api
+    <span class="key">use_backend</span> static_servers if is_static
+    <span class="key">use_backend</span> admin_servers  if is_admin is_intern   <span class="cmt"># 同時成立才採用</span>
+
+    <span class="cmt"># 都不匹配時的兜底</span>
+    <span class="key">default_backend</span> web_servers
+
+    <span class="cmt"># 封鎖某些 ACL</span>
+    <span class="key">http-request deny</span> if !is_intern is_admin   <span class="cmt"># 外部不准進 admin</span></pre>
+    <table>
+      <tr><th>常用取值</th><th>意義</th></tr>
+      <tr><td><code>path</code>, <code>path_beg</code>, <code>path_end</code></td><td>完整路徑 / 開頭符合 / 結尾符合</td></tr>
+      <tr><td><code>hdr(name)</code></td><td>取某個 Header 的值（如 <code>hdr(host)</code>）</td></tr>
+      <tr><td><code>src</code></td><td>來源 IP（可比對 CIDR）</td></tr>
+      <tr><td><code>method</code></td><td>HTTP method（GET / POST...）</td></tr>
+      <tr><td><code>url_param(name)</code></td><td>取某 URL 參數</td></tr>
+      <tr><td><code>ssl_fc</code></td><td>當前連線是否為 SSL/HTTPS</td></tr>
+    </table>
+    <div class="warn">
+      <strong>順序很重要：</strong><code>use_backend</code> 由上而下逐條評估，<strong>第一個匹配的就生效</strong>，
+      其餘不再判斷。把較具體的規則放前面，泛用的放後面。
+    </div>
+  </section>
+
+  <!-- 10. Sticky -->
+  <section id="sticky">
+    <h2>10. Session 黏滯（Sticky）</h2>
+    <p>
+      有些應用把 session 存在<strong>單台後端的記憶體</strong>裡（例如沒共用 Redis 的 PHP/Java 應用）。
+      這時候同一個使用者每次都得回到<strong>同一台 server</strong>，否則他就會「莫名其妙登出」。這就是 sticky session 要解決的問題。
+      最常用且最可靠的方式是 <strong>Cookie based</strong>：
+    </p>
+    <div class="diagram">
+      <div class="mermaid">
+sequenceDiagram
+  participant C as Client
+  participant H as HAProxy
+  participant W1 as web1
+  C->>H: 1. 首次請求（無 Cookie）
+  H->>W1: 2. 依演算法挑到 web1
+  W1-->>H: 3. 回應內容
+  H-->>C: 4. 回應 + Set-Cookie: SERVERID=web1
+  Note over C,W1: 之後同一個瀏覽器一定帶這個 Cookie
+  C->>H: 5. 後續請求（Cookie: SERVERID=web1）
+  H->>W1: 6. 直接送 web1，跳過演算法
+  W1-->>H: 7. 回應
+  H-->>C: 8. 回應
+      </div>
+      <div class="diagram-cap">圖 10-1　Cookie sticky：第一次請求被演算法分配，之後永遠回到同一台</div>
+    </div>
+<pre><span class="sec">backend</span> web_servers
+    <span class="key">balance</span> roundrobin
+    <span class="key">cookie</span> SERVERID insert indirect nocache    <span class="cmt"># 由 HAProxy 植入 Cookie</span>
+    <span class="key">server</span> web1 <span class="num">10.0.0.11</span>:<span class="num">8080</span> check cookie web1
+    <span class="key">server</span> web2 <span class="num">10.0.0.12</span>:<span class="num">8080</span> check cookie web2
+    <span class="key">server</span> web3 <span class="num">10.0.0.13</span>:<span class="num">8080</span> check cookie web3</pre>
+    <div class="tip">
+      <strong>更好的長遠方案：</strong>讓 session 不要放單機記憶體，改放共用的 Redis/DB，這樣<strong>任何一台 server 都能服務任何使用者</strong>，徹底擺脫黏滯需求。
+      sticky 是不得已的折衷——它讓擴容、故障切換都變得不對稱。
+    </div>
+  </section>
+
+  <!-- 11. SSL -->
+  <section id="ssl">
+    <h2>11. SSL/TLS Termination</h2>
+    <p>
+      把 HTTPS 的加解密集中在 HAProxy 處理、後端內網仍跑明文 HTTP，就是 <strong>SSL Termination</strong>。
+      好處：憑證只需放一處、CPU 加解密集中、後端設定大幅簡化。
+    </p>
+    <div class="diagram">
+      <div class="mermaid">
+graph LR
+  C["客戶端<br/>瀏覽器"] -->|"HTTPS (加密)"| HA["HAProxy<br/>解 TLS"]
+  HA -->|"HTTP 明文<br/>(內網)"| S1["web1"]
+  HA -->|"HTTP 明文<br/>(內網)"| S2["web2"]
+  style HA fill:#e0f2ef,stroke:#0e8674
+      </div>
+      <div class="diagram-cap">圖 11-1　外網吃 HTTPS、內網跑 HTTP；憑證只在 HAProxy 上</div>
+    </div>
+<pre><span class="sec">frontend</span> https_in
+    <span class="cmt"># 注意 pem 檔需包含「憑證 + 私鑰」一起</span>
+    <span class="key">bind</span> *:<span class="num">443</span> ssl crt /etc/haproxy/certs/site.pem
+    <span class="key">bind</span> *:<span class="num">80</span>
+
+    <span class="cmt"># 強制把 HTTP 轉成 HTTPS</span>
+    <span class="key">http-request redirect</span> scheme https code <span class="num">301</span> unless { ssl_fc }
+
+    <span class="key">default_backend</span> web_servers
+
+<span class="sec">backend</span> web_servers
+    <span class="key">balance</span> roundrobin
+    <span class="key">http-request set-header</span> X-Forwarded-Proto https if { ssl_fc }
+    <span class="key">server</span> web1 <span class="num">10.0.0.11</span>:<span class="num">8080</span> check
+    <span class="key">server</span> web2 <span class="num">10.0.0.12</span>:<span class="num">8080</span> check</pre>
+    <div class="note">
+      <strong>需要端對端加密？</strong>那就要 <strong>SSL Passthrough</strong>（<code>mode tcp</code> 直接轉發加密流量，HAProxy 不解密），
+      或在 server 行加 <code>ssl verify none</code> 做<strong>SSL re-encryption</strong>（HAProxy 解了再用 HTTPS 連後端）。安全性要求高的環境會選後者。
+    </div>
+  </section>
+
+  <!-- 12. HA -->
+  <section id="ha">
+    <h2>12. 高可用：HAProxy + Keepalived</h2>
+    <p>
+      HAProxy 解決了「後端高可用」，但是<strong>它自己也可能掛掉</strong>。標準解法是部署兩台 HAProxy（Master + Backup），
+      由 <strong>Keepalived</strong> 透過 <strong>VRRP 協定</strong>共享一個<strong>虛擬 IP（VIP）</strong>。Master 掛了，Backup 自動接管 VIP，秒級切換。
+    </p>
+    <div class="diagram">
+      <div class="mermaid">
+graph TB
+  C["客戶端"] --> VIP["VIP 虛擬 IP<br/>10.0.0.100"]
+  VIP -.目前持有.- HA1["HAProxy Master<br/>10.0.0.11<br/>(健康)"]
+  VIP -.待命.- HA2["HAProxy Backup<br/>10.0.0.12<br/>(VRRP 監聽)"]
+  HA1 --> POOL["Backend pool<br/>web1 / web2 / web3"]
+  HA2 -.Master 掛掉時接管.-> POOL
+  style HA1 fill:#e6f4ec,stroke:#1f9d57,color:#0f6b3a
+  style HA2 fill:#f0f0f0,stroke:#999
+  style VIP fill:#fcefe2,stroke:#e07b2b
+      </div>
+      <div class="diagram-cap">圖 12-1　兩台 HAProxy 共用一個 VIP；Master 故障時 Backup 透過 VRRP 接管</div>
+    </div>
+<pre><span class="cmt"># /etc/keepalived/keepalived.conf （Master 機）</span>
+vrrp_script chk_haproxy {
+    script <span class="str">"killall -0 haproxy"</span>     <span class="cmt"># 檢查 haproxy 程序是否活著</span>
+    interval <span class="num">2</span>
+    weight <span class="num">2</span>
+}
+
+vrrp_instance VI_1 {
+    state MASTER
+    interface eth0
+    virtual_router_id <span class="num">51</span>
+    priority <span class="num">110</span>                   <span class="cmt"># Master 較高</span>
+    advert_int <span class="num">1</span>
+    authentication { auth_type PASS  auth_pass mysecret }
+    virtual_ipaddress { <span class="num">10.0.0.100</span>/<span class="num">24</span> }
+    track_script { chk_haproxy }
+}</pre>
+    <p>Backup 機把 <code>state</code> 改成 <code>BACKUP</code>、<code>priority</code> 降低（例如 100）即可。</p>
+  </section>
+
+  <!-- 13. Stats -->
+  <section id="stats">
+    <h2>13. Stats 頁面與監控<span class="badge">必開</span></h2>
+    <p>HAProxy 內建一個漂亮的 stats 頁面，能即時看每個 frontend/backend/server 的狀態、連線數、流量、健康檢查結果——上線前一定要打開：</p>
+<pre><span class="sec">listen</span> stats
+    <span class="key">bind</span> *:<span class="num">8404</span>
+    <span class="key">mode</span> http
+    <span class="key">stats enable</span>
+    <span class="key">stats uri</span> /stats
+    <span class="key">stats refresh</span> <span class="num">5s</span>
+    <span class="key">stats auth</span> admin:secretPassword       <span class="cmt"># 基本驗證</span>
+    <span class="key">stats hide-version</span></pre>
+    <p>之後用瀏覽器開 <code>http://your-haproxy:8404/stats</code>，輸入帳密就能看到完整狀態表。</p>
+    <ul>
+      <li>每個 server 一行：UP/DOWN、目前連線、累計請求、回應碼分佈。</li>
+      <li>可直接在頁面上<strong>暫停某台 server</strong>（drain）做維護，不必改設定檔。</li>
+      <li>進階監控可整合 <strong>Prometheus exporter</strong>（HAProxy 2.0+ 內建）→ Grafana 儀表板。</li>
+    </ul>
+    <div class="warn">
+      <strong>安全提醒：</strong>stats 頁面含敏感資訊（後端 IP、連線、URL），<strong>務必</strong>用 <code>stats auth</code> 加密碼，
+      或只 bind 到內網介面，<strong>絕不可</strong>暴露到公網。
+    </div>
+  </section>
+
+  <!-- 14. 最佳實踐 -->
+  <section id="practice">
+    <h2>14. 最佳實踐與常見陷阱</h2>
+
+    <div class="two-col">
+      <div class="col-box">
+        <h4>✅ 最佳實踐</h4>
+        <ul>
+          <li>所有 backend 都設<strong>健康檢查</strong>，後端做專用 <code>/health</code> 端點。</li>
+          <li>改設定後用 <code>haproxy -c -f cfg</code> <strong>驗證語法</strong>，再 <code>reload</code>。</li>
+          <li>用 <code>reload</code> 而非 <code>restart</code>，做到<strong>零中斷</strong>切換。</li>
+          <li>開 <code>option forwardfor</code>，讓後端拿得到真實 client IP。</li>
+          <li>合理設定 <code>timeout connect/client/server</code>，避免連線卡死。</li>
+          <li>SSL 集中在 HAProxy 處理，憑證一處管理。</li>
+          <li>必開 stats 頁面 + 整合 Prometheus 監控。</li>
+          <li>對外只用兩台 HAProxy + Keepalived，<strong>消除單點</strong>。</li>
+        </ul>
+      </div>
+      <div class="col-box">
+        <h4>⚠️ 常見陷阱</h4>
+        <ul>
+          <li>沒寫健康檢查，故障 server 仍接流量 → <strong>大量 5xx</strong>。</li>
+          <li>用 <code>source</code> 演算法卻所有 client 來自 NAT，<strong>流量擠到一台</strong>。</li>
+          <li>ACL 順序錯：泛用規則放前面，<strong>具體規則永遠不會匹配</strong>。</li>
+          <li><code>timeout server</code> 比後端業務還短，請求被<strong>誤殺</strong>成 504。</li>
+          <li>Sticky 用 <code>source</code> + NAT，<strong>負載完全失衡</strong>。</li>
+          <li>SSL pem 檔權限不對、憑證 + 私鑰沒合在一起 → 啟動失敗。</li>
+          <li><code>maxconn</code> 設太低，吞吐<strong>被自己卡住</strong>（記得也調 OS 的 ulimit）。</li>
+          <li>用 <code>restart</code> 代替 <code>reload</code>，現存連線<strong>全被殺</strong>。</li>
+          <li>stats 頁面忘了加密碼，<strong>後端結構外洩</strong>。</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>總覽：一個 HTTPS 請求穿過 HAProxy 的全程</h3>
+    <div class="diagram">
+      <div class="mermaid">
+flowchart LR
+  C["客戶端<br/>HTTPS 請求"] --> VIP["VIP<br/>(Keepalived)"]
+  VIP --> HA["HAProxy<br/>SSL 卸載"]
+  HA --> ACL["ACL 路由<br/>依 Host/Path 選 backend"]
+  ACL --> BAL["balance 演算法<br/>選一台健康 server"]
+  BAL --> S["後端 Web Server<br/>(HTTP 明文)"]
+  S --> RESP["回應沿原路返回"]
+  RESP --> C
+  style HA fill:#e0f2ef,stroke:#0e8674
+  style ACL fill:#e0f2ef,stroke:#0e8674
+  style BAL fill:#fcefe2,stroke:#e07b2b
+  style S fill:#e6f4ec,stroke:#1f9d57,color:#0f6b3a
+      </div>
+      <div class="diagram-cap">圖 14-1　VIP → SSL 卸載 → ACL 路由 → 演算法選 server → 後端處理</div>
+    </div>
+
+    <div class="tip">
+      <strong>學習路徑：</strong>先用 Docker 跑一個 HAProxy + 兩個簡單 web server，自己 <code>curl</code> 幾次觀察輪詢；
+      接著故意 <code>kill</code> 掉一台 web，看 HAProxy 怎麼把它跳過；最後加上 ACL 玩內容路由與 SSL。
+      <strong>每一步都打開 <code>/stats</code> 頁面看狀態變化，觀念秒懂。</strong>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  HAProxy 詳細教學 · 概念說明搭配 Mermaid 流程圖 · 僅供學習參考
+</footer>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#e0f2ef',
+      primaryBorderColor: '#0e8674',
+      primaryTextColor: '#0d2925',
+      lineColor: '#7d918d',
+      secondaryColor: '#fcefe2',
+      tertiaryColor: '#f4f9f8',
+      fontFamily: 'Segoe UI, Microsoft JhengHei, sans-serif',
+      fontSize: '14px'
+    },
+    flowchart: { curve: 'basis', useMaxWidth: true },
+    sequence: { useMaxWidth: true }
+  });
+</script>
+</body>
+</html>
